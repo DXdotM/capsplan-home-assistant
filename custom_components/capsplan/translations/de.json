@@ -77,13 +77,25 @@
     },
     "binary_sensor": {
       "dose_open": {
-        "name": "Einnahme offen"
+        "name": "Einnahme offen",
+        "state": {
+          "on": "Offen",
+          "off": "Erledigt"
+        }
       },
       "stock_low": {
-        "name": "Vorrat niedrig"
+        "name": "Vorrat niedrig",
+        "state": {
+          "on": "Niedrig",
+          "off": "OK"
+        }
       },
       "any_dose_open": {
-        "name": "Einnahme offen"
+        "name": "Einnahme offen",
+        "state": {
+          "on": "Offen",
+          "off": "Erledigt"
+        }
       }
     },
     "calendar": {

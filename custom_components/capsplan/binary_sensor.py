@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from typing import Any
 
 from homeassistant.components.binary_sensor import (
-    BinarySensorDeviceClass,
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
@@ -32,7 +31,6 @@ MEDICATION_BINARY: tuple[MedicationBinaryDescription, ...] = (
     MedicationBinaryDescription(
         key="dose_open",
         translation_key="dose_open",
-        device_class=BinarySensorDeviceClass.PROBLEM,
         value=lambda s: s.open_today > 0,
         attrs=lambda s: {
             "open": [d.time.isoformat() for d in s.today if d.status == "open"],
@@ -42,7 +40,6 @@ MEDICATION_BINARY: tuple[MedicationBinaryDescription, ...] = (
     MedicationBinaryDescription(
         key="stock_low",
         translation_key="stock_low",
-        device_class=BinarySensorDeviceClass.PROBLEM,
         value=lambda s: s.stock_low,
         exists=lambda s: s.stock_amount is not None or s.stock_units is not None,
     ),
@@ -75,8 +72,6 @@ async def async_setup_entry(
 
 class AnyDoseOpen(CapsPlanEntity, BinarySensorEntity):
     """On while any medication has a dose that is due and not confirmed."""
-
-    _attr_device_class = BinarySensorDeviceClass.PROBLEM
 
     def __init__(self, coordinator: CapsPlanCoordinator) -> None:
         super().__init__(coordinator, "any_dose_open")

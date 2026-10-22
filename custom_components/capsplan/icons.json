@@ -1,0 +1,70 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "dose_open": {
+        "default": "mdi:check-circle-outline",
+        "state": {
+          "on": "mdi:clock-alert-outline"
+        }
+      },
+      "any_dose_open": {
+        "default": "mdi:check-circle-outline",
+        "state": {
+          "on": "mdi:clock-alert-outline"
+        }
+      },
+      "stock_low": {
+        "default": "mdi:package-variant-closed",
+        "state": {
+          "on": "mdi:package-variant-remove"
+        }
+      }
+    },
+    "calendar": {
+      "doses": {
+        "default": "mdi:calendar-check"
+      }
+    },
+    "sensor": {
+      "next_dose": {
+        "default": "mdi:clock-outline"
+      },
+      "taken_today": {
+        "default": "mdi:check-all"
+      },
+      "last_taken": {
+        "default": "mdi:history"
+      },
+      "current_dose": {
+        "default": "mdi:pill"
+      },
+      "stock": {
+        "default": "mdi:package-variant-closed"
+      },
+      "stock_units": {
+        "default": "mdi:package-variant-closed"
+      },
+      "supply_days": {
+        "default": "mdi:calendar-range"
+      },
+      "next_dose_any": {
+        "default": "mdi:clock-outline"
+      },
+      "next_doses_text": {
+        "default": "mdi:pill"
+      },
+      "open_doses_text": {
+        "default": "mdi:clock-alert-outline"
+      },
+      "open_doses": {
+        "default": "mdi:clock-alert-outline"
+      },
+      "adherence_7d": {
+        "default": "mdi:chart-donut"
+      },
+      "last_sync": {
+        "default": "mdi:cloud-sync-outline"
+      }
+    }
+  }
+}

@@ -77,13 +77,25 @@
     },
     "binary_sensor": {
       "dose_open": {
-        "name": "Dose open"
+        "name": "Dose open",
+        "state": {
+          "on": "Open",
+          "off": "Done"
+        }
       },
       "stock_low": {
-        "name": "Stock low"
+        "name": "Stock low",
+        "state": {
+          "on": "Low",
+          "off": "OK"
+        }
       },
       "any_dose_open": {
-        "name": "Dose open"
+        "name": "Dose open",
+        "state": {
+          "on": "Open",
+          "off": "Done"
+        }
       }
     },
     "calendar": {
