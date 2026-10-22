@@ -18,7 +18,7 @@ content: |
   ### ⏰ Überfällig
   {%- for d in overdue %}
   {%- set m = ((now() - as_datetime(d.time)).total_seconds() // 60) | int %}
-  - **{{ d.medication }}**{% if d.dose %} {{ '%g' | format(d.dose) }} {{ d.unit }}{% endif %}{% if ns.lists > 1 and d.person %} ({{ d.person }}){% endif %} · geplant {{ as_datetime(d.time).strftime('%H:%M') }} · seit {% if m >= 60 %}{{ m // 60 }} Std. {% endif %}{{ m % 60 }} Min.
+  - **{% if as_datetime(d.time).date() < now().date() %}gestern {% endif %}{{ as_datetime(d.time).strftime('%H:%M') }}** {{ d.medication }}{% if d.dose %} {{ '%g' | format(d.dose) }} {{ d.unit }}{% endif %}{% if ns.lists > 1 and d.person %} ({{ d.person }}){% endif %} · {% if m >= 60 %}seit {{ m // 60 }} Std.{% else %}seit {{ m }} Min.{% endif %}
   {%- else %}
   ✓ Nichts überfällig
   {%- endfor %}

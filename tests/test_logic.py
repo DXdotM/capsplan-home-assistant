@@ -23,6 +23,7 @@ def micros(dt: datetime) -> int:
 
 
 UNSET = micros(datetime(2000, 1, 1, tzinfo=TZ))
+CREATED = micros(datetime(2026, 10, 19, tzinfo=TZ))
 
 
 def record(name: str, collection: str, payload: dict) -> dict:
@@ -39,7 +40,8 @@ def record(name: str, collection: str, payload: dict) -> dict:
 
 def medication(**overrides) -> dict:
     payload = {
-        "activeIngredient": None, "color": 4282219118, "createdAt": UNSET,
+        # Created at midnight of the tests' "today": nothing open from yesterday.
+        "activeIngredient": None, "color": 4282219118, "createdAt": CREATED,
         "doseAmount": 5.0, "doseDrops": None, "doseLiquidMl": None, "doseTablet": None,
         "doseUnit": "mg", "iconIndex": 0, "intervalDays": 1, "intervalStartDate": UNSET,
         "isActive": True, "isOnDemand": False, "isTapering": False, "maxPerDay": 0,
@@ -256,3 +258,27 @@ def test_stock_label_per_strength():
     med = logic.build(store, TZ)[MED]
     assert logic.stock_label(med) == "94 × 75 mg, ½ × 50 mg"
     assert logic.tablets_label(3) == "¾" and logic.tablets_label(9) == "2¼" and logic.tablets_label(0) == "0"
+
+
+def test_yesterday_open_stays_open_today():
+    created = micros(datetime(2026, 10, 1, tzinfo=TZ))
+    store = store_with(
+        record(f"medication-{MED}", "medication", medication(scheduledTimes=["08:00", "21:00"], createdAt=created)),
+        record("intake-y1", "intake", intake(datetime(2026, 10, 18, 8, tzinfo=TZ))),
+    )
+    med = logic.build(store, TZ)[MED]
+    now = datetime(2026, 10, 19, 7, tzinfo=TZ)
+    state = logic.medication_state(med, now)
+    # Yesterday 21:00 was never confirmed: still open the morning after.
+    assert [d.time for d in state.overdue] == [datetime(2026, 10, 18, 21, tzinfo=TZ)]
+    # The day after tomorrow it is history, not open anymore.
+    later = logic.medication_state(med, datetime(2026, 10, 20, 7, tzinfo=TZ))
+    assert all(d.time.date() != datetime(2026, 10, 18).date() for d in later.overdue)
+
+
+def test_yesterday_before_creation_is_not_open():
+    created = micros(datetime(2026, 10, 18, 22, tzinfo=TZ))  # added after 21:00
+    store = store_with(record(f"medication-{MED}", "medication",
+                              medication(scheduledTimes=["21:00"], createdAt=created)))
+    med = logic.build(store, TZ)[MED]
+    assert logic.medication_state(med, datetime(2026, 10, 19, 7, tzinfo=TZ)).overdue == []

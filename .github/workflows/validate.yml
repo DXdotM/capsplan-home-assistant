@@ -26,12 +26,22 @@ jobs:
       - uses: home-assistant/actions/hassfest@master
 
   tests:
-    name: Tests
+    name: Tests (Home Assistant ${{ matrix.ha }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Oldest supported version (hacs.json "homeassistant") …
+          - ha: "2026.3"
+            package: "pytest-homeassistant-custom-component==0.13.317"
+          # … and the newest.
+          - ha: latest
+            package: "pytest-homeassistant-custom-component"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.14"
-      - run: pip install -r requirements_test.txt
+      - run: pip install "${{ matrix.package }}"
       - run: pytest -q

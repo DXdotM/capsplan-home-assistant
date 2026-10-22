@@ -15,6 +15,7 @@ from homeassistant.config_entries import (
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
+    BooleanSelector,
     TextSelector,
     TextSelectorConfig,
     TextSelectorType,
@@ -23,6 +24,7 @@ from homeassistant.helpers.selector import (
 from .api import CapsPlanAuthError, CapsPlanClient, CapsPlanError
 from .const import (
     API_TOKEN,
+    CONF_HIDE_NAMES,
     CONF_PERSON,
     CONF_USER_RECORD,
     CONF_WEB_AUTH_TOKEN,
@@ -123,11 +125,18 @@ class CapsPlanOptionsFlow(OptionsFlowWithReload):
             self.hass.config_entries.async_update_entry(
                 self.config_entry, title=entry_title(person)
             )
-            return self.async_create_entry(data={CONF_PERSON: person})
+            return self.async_create_entry(
+                data={CONF_PERSON: person, CONF_HIDE_NAMES: user_input.get(CONF_HIDE_NAMES, False)}
+            )
         return self.async_show_form(
             step_id="init",
             data_schema=self.add_suggested_values_to_schema(
-                vol.Schema({vol.Optional(CONF_PERSON, default=""): TextSelector()}),
+                vol.Schema(
+                    {
+                        vol.Optional(CONF_PERSON, default=""): TextSelector(),
+                        vol.Optional(CONF_HIDE_NAMES, default=False): BooleanSelector(),
+                    }
+                ),
                 self.config_entry.options,
             ),
         )

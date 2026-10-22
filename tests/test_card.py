@@ -48,7 +48,7 @@ def _render(hass, name: str) -> str:
 async def test_overview_card_en(hass, freezer):
     await _setup(hass, freezer, "en")
     text = _render(hass, "overview-card.en.yaml")
-    assert "- **Metformin** 500 mg · planned 05:30 · 8 h 10 min overdue\n- **Metformin** 500 mg · planned 12:00 · 1 h 40 min overdue" in text
+    assert "- **05:30** Metformin 500 mg · 8 h overdue\n- **12:00** Metformin 500 mg · 1 h overdue" in text
     assert "---" in text
     assert "- **16:00** Metformin 500 mg\n- **19:00** Ramipril 5 mg" in text
 
@@ -56,7 +56,7 @@ async def test_overview_card_en(hass, freezer):
 async def test_overview_card_de(hass, freezer):
     await _setup(hass, freezer, "de")
     text = _render(hass, "overview-card.de.yaml")
-    assert "- **Metformin** 500 mg · geplant 05:30 · seit 8 Std. 10 Min." in text
+    assert "- **05:30** Metformin 500 mg · seit 8 Std." in text
     assert "- **16:00** Metformin 500 mg\n- **19:00** Ramipril 5 mg" in text
 
 
@@ -75,6 +75,6 @@ async def test_overview_card_two_people(hass, freezer):
             assert await hass.config_entries.async_setup(entry.entry_id)
             await hass.async_block_till_done()
     text = _render(hass, "overview-card.en.yaml")
-    assert ("- **Ramipril** 5 mg (Ben) · planned 08:00 · 5 h 40 min overdue\n"
-            "- **Metformin** 5 mg (Anna) · planned 12:00 · 1 h 40 min overdue") in text
+    assert ("- **08:00** Ramipril 5 mg (Ben) · 5 h overdue\n"
+            "- **12:00** Metformin 5 mg (Anna) · 1 h overdue") in text
     assert "- **16:00** Ramipril 5 mg (Ben)\n- **18:00** Metformin 5 mg (Anna)" in text

@@ -113,12 +113,14 @@
     "step": {
       "init": {
         "title": "CapsPlan",
-        "description": "Change whose CapsPlan this is. Existing entity ids stay the same.",
+        "description": "Whose CapsPlan this is and how medications are shown. Existing entity ids stay the same.",
         "data": {
-          "person": "Name (optional)"
+          "person": "Name (optional)",
+          "hide_names": "Hide medication names"
         },
         "data_description": {
-          "person": "Whose CapsPlan is this? Only needed when several people connect their CapsPlan, e.g. \"Anna\". Their medications are then shown as \"Metformin (Anna)\". Sign in with each Apple ID in a private browser window."
+          "person": "Whose CapsPlan is this? Only needed when several people connect their CapsPlan, e.g. \"Anna\". Their medications are then shown as \"Metformin (Anna)\". Sign in with each Apple ID in a private browser window.",
+          "hide_names": "Shows \"Medication 1\", \"Medication 2\" … instead of the names everywhere in Home Assistant – useful for dashboards others can see."
         }
       }
     }

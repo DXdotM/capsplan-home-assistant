@@ -6,7 +6,7 @@ from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import logic
-from .const import APP_STORE_URL, CONF_PERSON, DOMAIN
+from .const import APP_STORE_URL, CONF_PERSON, DOMAIN, MEDICATION_TYPES, SYNC_WORD
 from .coordinator import CapsPlanCoordinator
 
 
@@ -29,7 +29,7 @@ class CapsPlanEntity(CoordinatorEntity[CapsPlanCoordinator]):
             identifiers={(DOMAIN, entry_id)},
             name=f"CapsPlan {person_of(coordinator)}".strip(),
             manufacturer="DXdotM Coding",
-            model="iCloud sync",
+            model=SYNC_WORD.get(coordinator.hass.config.language.split("-")[0], SYNC_WORD["en"]),
             entry_type=DeviceEntryType.SERVICE,
             configuration_url=APP_STORE_URL,
         )
@@ -48,11 +48,13 @@ class CapsPlanMedicationEntity(CoordinatorEntity[CapsPlanCoordinator]):
         self._attr_unique_id = f"{entry_id}_{sid}_{key}"
         med = self.state_data.medication
         person = person_of(coordinator)
+        lang = coordinator.hass.config.language.split("-")[0]
+        types = MEDICATION_TYPES.get(lang, MEDICATION_TYPES["en"])
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, f"{entry_id}_{sid}")},
             name=f"{med.name} ({person})" if person else med.name,
             manufacturer="CapsPlan",
-            model=med.type.capitalize(),
+            model=types.get(med.type, med.type),
             entry_type=DeviceEntryType.SERVICE,
         )
 

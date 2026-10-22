@@ -3,6 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<!-- Only Apple can be contacted. The hash must match the inline script below
+     (python3 scripts/update_csp.py after changing it). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-tUQ7tA2Yr2DaWlOb2z+SK3IK3j4TmPUDlWePAbIcBKY='; style-src 'unsafe-inline'; img-src 'self'; connect-src https://api.apple-cloudkit.com; base-uri 'none'; form-action 'none'">
 <title>CapsPlan for Home Assistant – Sign in</title>
 <meta name="description" content="Sign in with your Apple ID to connect CapsPlan to Home Assistant.">
 <link rel="icon" href="icon.png">
@@ -112,12 +116,71 @@
     errLoad: "Apple cannot be reached right now. Reload the page in a moment.",
     errPopup: "The sign-in window was blocked. Allow pop-ups for this page and try again.",
   };
-  const de = (navigator.language || "").toLowerCase().startsWith("de");
-  const T = (k) => (de ? DE[k] : EN[k]);
-  if (de) {
-    document.documentElement.lang = "de";
+  const ES = {
+    title: "CapsPlan para Home Assistant",
+    subtitle: "Inicia sesión para conectar tus medicamentos",
+    step1: "Haz clic en «Iniciar sesión con Apple ID» e inicia sesión con el Apple ID con el que se sincroniza CapsPlan.",
+    step2: "Si Apple ofrece «Mantener la sesión iniciada», marca la casilla.",
+    step3: "Copia el token que aparece y pégalo enseguida en la configuración de CapsPlan en Home Assistant.",
+    loading: "Cargando …",
+    signin: "Iniciar sesión con Apple ID",
+    tokenTitle: "Tu token de inicio de sesión",
+    copy: "Copiar token",
+    copied: "Copiado ✓",
+    single: "Usa el token enseguida y solo una vez. No recargues esta página después; si la configuración indica que el token no es válido, vuelve a iniciar sesión aquí.",
+    privacy: "Esta página solo se comunica con Apple. El token se muestra aquí en tu navegador y no se envía a ningún otro sitio. Solo da acceso a los datos de CapsPlan en tu iCloud, nunca a otros datos de iCloud.",
+    multi: "¿Conectas a varias personas? Inicia sesión con cada Apple ID en una ventana privada del navegador para que Apple no reutilice el inicio de sesión anterior.",
+    adp: "Las cuentas con la Protección de datos avanzada activada no pueden iniciar sesión aquí (una restricción de Apple para apps ajenas a Apple).",
+    docs: "Documentación",
+    errLoad: "Apple no está disponible ahora mismo. Recarga la página en un momento.",
+    errPopup: "Se ha bloqueado la ventana de inicio de sesión. Permite las ventanas emergentes para esta página y vuelve a intentarlo.",
+  };
+  const IT = {
+    title: "CapsPlan per Home Assistant",
+    subtitle: "Accedi per collegare i tuoi farmaci",
+    step1: "Fai clic su «Accedi con ID Apple» e accedi con l'ID Apple con cui si sincronizza CapsPlan.",
+    step2: "Se Apple offre «Mantieni l'accesso», seleziona la casella.",
+    step3: "Copia il token mostrato e incollalo subito nella configurazione di CapsPlan in Home Assistant.",
+    loading: "Caricamento …",
+    signin: "Accedi con ID Apple",
+    tokenTitle: "Il tuo token di accesso",
+    copy: "Copia token",
+    copied: "Copiato ✓",
+    single: "Usa il token subito e una sola volta. Non ricaricare questa pagina dopo; se la configurazione segnala un token non valido, accedi di nuovo qui.",
+    privacy: "Questa pagina comunica solo con Apple. Il token viene mostrato qui nel tuo browser e non viene inviato altrove. Dà accesso solo ai dati di CapsPlan nel tuo iCloud, mai ad altri dati iCloud.",
+    multi: "Colleghi più persone? Accedi con ogni ID Apple in una finestra privata del browser, così Apple non riutilizza l'accesso precedente.",
+    adp: "Gli account con Protezione avanzata dei dati attiva non possono accedere qui (una limitazione di Apple per le app di terze parti).",
+    docs: "Documentazione",
+    errLoad: "Apple al momento non è raggiungibile. Ricarica la pagina tra poco.",
+    errPopup: "La finestra di accesso è stata bloccata. Consenti i pop-up per questa pagina e riprova.",
+  };
+  const TR = {
+    title: "Home Assistant için CapsPlan",
+    subtitle: "İlaçlarını bağlamak için giriş yap",
+    step1: "“Apple Kimliği ile giriş yap”a tıkla ve CapsPlan'ın eşitleme yaptığı Apple Kimliğiyle giriş yap.",
+    step2: "Apple “Oturumu açık tut” seçeneğini sunarsa işaretle.",
+    step3: "Gösterilen belirteci kopyala ve hemen Home Assistant'taki CapsPlan kurulumuna yapıştır.",
+    loading: "Yükleniyor …",
+    signin: "Apple Kimliği ile giriş yap",
+    tokenTitle: "Giriş belirtecin",
+    copy: "Belirteci kopyala",
+    copied: "Kopyalandı ✓",
+    single: "Belirteci hemen ve yalnızca bir kez kullan. Sonrasında bu sayfayı yenileme; kurulum belirtecin geçersiz olduğunu söylerse burada yeniden giriş yap.",
+    privacy: "Bu sayfa yalnızca Apple ile iletişim kurar. Belirteç burada tarayıcında gösterilir ve başka hiçbir yere gönderilmez. Yalnızca iCloud'undaki CapsPlan verilerine erişim sağlar, başka iCloud verilerine asla.",
+    multi: "Birden fazla kişiyi mi bağlıyorsun? Apple önceki girişi yeniden kullanmasın diye her Apple Kimliğiyle gizli bir tarayıcı penceresinde giriş yap.",
+    adp: "Gelişmiş Veri Koruması açık olan hesaplar burada giriş yapamaz (Apple'ın üçüncü taraf uygulamalar için koyduğu bir kısıtlama).",
+    docs: "Belgeler",
+    errLoad: "Apple'a şu anda ulaşılamıyor. Sayfayı birazdan yenile.",
+    errPopup: "Giriş penceresi engellendi. Bu sayfa için açılır pencerelere izin ver ve tekrar dene.",
+  };
+  const LANGS = { de: DE, es: ES, it: IT, tr: TR };
+  const lang = (navigator.language || "en").toLowerCase().slice(0, 2);
+  const L = LANGS[lang];
+  const T = (k) => (L && L[k]) || EN[k];
+  if (L) {
+    document.documentElement.lang = lang;
     document.querySelectorAll("[data-t]").forEach((el) => {
-      const v = DE[el.dataset.t];
+      const v = L[el.dataset.t];
       if (v) el.textContent = v;
     });
   }

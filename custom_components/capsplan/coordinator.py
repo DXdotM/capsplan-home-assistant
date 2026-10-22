@@ -15,7 +15,13 @@ from homeassistant.util import dt as dt_util
 
 from . import logic
 from .api import CapsPlanAuthError, CapsPlanClient, CapsPlanError
-from .const import DOMAIN, STORAGE_VERSION, UPDATE_INTERVAL
+from .const import (
+    CONF_HIDE_NAMES,
+    DOMAIN,
+    MEDICATION_WORD,
+    STORAGE_VERSION,
+    UPDATE_INTERVAL,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -90,22 +96,28 @@ class CapsPlanCoordinator(DataUpdateCoordinator[CapsPlanData]):
         """Recomputes all states from the synced data for the current time."""
         tz = dt_util.get_default_time_zone()
         now = dt_util.now()
-        meds = logic.build(self._sync, tz)
+        # Paused or finished medications (switched off in the app) are left out.
+        meds = {sid: m for sid, m in logic.build(self._sync, tz).items() if m.active}
+        if self.config_entry.options.get(CONF_HIDE_NAMES):
+            label = MEDICATION_WORD.get(self.hass.config.language.split("-")[0], "Medication")
+            ordered = sorted(meds.values(), key=lambda m: (m.created_at or now, m.sid))
+            for i, med in enumerate(ordered, 1):
+                med.name = f"{label} {i}"
         states = {sid: logic.medication_state(m, now) for sid, m in meds.items()}
+
+        def by_time(x: tuple[logic.MedicationState, logic.PlannedDose]):
+            return (x[1].time, x[0].medication.name.lower())
+
         upcoming = sorted(
-            ((s, s.next_dose) for s in states.values() if s.next_dose is not None),
-            key=lambda x: (x[1].time, x[0].medication.name.lower()),
+            ((s, s.next_dose) for s in states.values() if s.next_dose is not None), key=by_time
         )
         next_group = [x for x in upcoming if x[1].time == upcoming[0][1].time] if upcoming else []
-        remaining_today = sorted(
-            ((s, d) for s in states.values() for d in s.today if d.status in ("open", "upcoming")),
-            key=lambda x: (x[1].time, x[0].medication.name.lower()),
+        open_list = sorted(((s, d) for s in states.values() for d in s.overdue), key=by_time)
+        remaining_today = open_list + sorted(
+            ((s, d) for s in states.values() for d in s.today if d.status == "upcoming"),
+            key=by_time,
         )
-        open_list = sorted(
-            ((s, d) for s in states.values() for d in s.today if d.status == "open"),
-            key=lambda x: (x[1].time, x[0].medication.name.lower()),
-        )
-        active = [m for m in meds.values() if m.active and not m.on_demand]
+        scheduled = [m for m in meds.values() if not m.on_demand]
         return CapsPlanData(
             now=now,
             medications=states,
@@ -114,7 +126,7 @@ class CapsPlanCoordinator(DataUpdateCoordinator[CapsPlanData]):
             next_group=next_group,
             open_list=open_list,
             remaining_today=remaining_today,
-            adherence_7d=logic.adherence(active, now),
+            adherence_7d=logic.adherence(scheduled, now),
             last_sync=self._last_sync,
         )
 

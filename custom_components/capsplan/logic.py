@@ -162,6 +162,7 @@ class Medication:
     tapering_direction: int
     use_strengths: bool
     color: int
+    created_at: datetime | None = None
     slots: list[Slot] = field(default_factory=list)
     phases: list[Phase] = field(default_factory=list)
     strengths: list[Strength] = field(default_factory=list)
@@ -197,6 +198,7 @@ def build(store: SyncStore, tz: tzinfo) -> dict[str, Medication]:
             tapering_direction=p.get("taperingDirection") or 0,
             use_strengths=bool(p.get("useStrengths")),
             color=p.get("color") or 0,
+            created_at=from_micros(p.get("createdAt"), tz),
         )
     for _, (collection, p) in store.records.items():
         med = meds.get(p.get("_med") or "")
@@ -421,6 +423,9 @@ class MedicationState:
     stock_low: bool
     stock_by_strength: dict[str, float]
     supply_days: int | None
+    # Due and neither confirmed nor skipped: yesterday's (the app keeps
+    # showing them the next day, "from yesterday") and today's.
+    overdue: list[PlannedDose] = field(default_factory=list)
 
     @property
     def taken_today(self) -> int:
@@ -466,6 +471,17 @@ def dose_label(med: Medication, dose: float | None) -> str:
     return f"{med.name} {_fmt(dose)} {med.dose_unit}"
 
 
+def open_from_yesterday(med: Medication, now: datetime) -> list[PlannedDose]:
+    """Yesterday's doses nobody confirmed or skipped (OpenFromYesterday.openTimes):
+    still open the day after, unless the medication didn't exist yet."""
+    created = med.created_at if _is_set(med.created_at) else None
+    return [
+        d
+        for d in planned_doses(med, now.date() - timedelta(days=1), now)
+        if d.status == "open" and (created is None or d.time >= created)
+    ]
+
+
 def medication_state(med: Medication, now: datetime, horizon_days: int = 21) -> MedicationState:
     today = planned_doses(med, now.date(), now)
     next_dose = next((d for d in today if d.status == "upcoming"), None)
@@ -502,6 +518,7 @@ def medication_state(med: Medication, now: datetime, horizon_days: int = 21) -> 
     return MedicationState(
         med, today, next_dose, current, last_taken, amount, units, low, by_strength,
         _supply_days(med, amount, today, now) if amount is not None else None,
+        overdue=open_from_yesterday(med, now) + [d for d in today if d.status == "open"],
     )
 
 

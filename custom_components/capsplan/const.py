@@ -21,6 +21,15 @@ CONF_WEB_AUTH_TOKEN: Final = "web_auth_token"
 CONF_USER_RECORD: Final = "user_record_name"
 # Whose CapsPlan this is ("Anna"); empty for a single person.
 CONF_PERSON: Final = "person"
+# Show "Medication 1" instead of the real names (shared dashboards).
+CONF_HIDE_NAMES: Final = "hide_names"
+MEDICATION_WORD: Final = {
+    "de": "Medikament",
+    "en": "Medication",
+    "es": "Medicamento",
+    "it": "Farmaco",
+    "tr": "İlaç",
+}
 
 UPDATE_INTERVAL: Final = timedelta(minutes=5)
 RECOMPUTE_INTERVAL: Final = timedelta(minutes=1)
@@ -28,3 +37,71 @@ RECOMPUTE_INTERVAL: Final = timedelta(minutes=1)
 STORAGE_VERSION: Final = 1
 
 APP_STORE_URL: Final = "https://apps.apple.com/app/id6779642344"
+
+# Dosage forms as the app names them (device model).
+MEDICATION_TYPES: Final = {
+    "de": {
+        "tablet": "Tablette",
+        "liquid": "Flüssig",
+        "drops": "Tropfen",
+        "capsule": "Kapsel",
+        "injection": "Injektion",
+        "patch": "Pflaster",
+        "inhaler": "Inhalator",
+        "powder": "Pulver",
+        "spray": "Spray"
+    },
+    "en": {
+        "tablet": "Tablet",
+        "liquid": "Liquid",
+        "drops": "Drops",
+        "capsule": "Capsule",
+        "injection": "Injection",
+        "patch": "Patch",
+        "inhaler": "Inhaler",
+        "powder": "Powder",
+        "spray": "Spray"
+    },
+    "es": {
+        "tablet": "Comprimido",
+        "liquid": "Líquido",
+        "drops": "Gotas",
+        "capsule": "Cápsula",
+        "injection": "Inyección",
+        "patch": "Parche",
+        "inhaler": "Inhalador",
+        "powder": "Polvo",
+        "spray": "Espray"
+    },
+    "it": {
+        "tablet": "Compressa",
+        "liquid": "Liquido",
+        "drops": "Gocce",
+        "capsule": "Capsula",
+        "injection": "Iniezione",
+        "patch": "Cerotto",
+        "inhaler": "Inalatore",
+        "powder": "Polvere",
+        "spray": "Spray"
+    },
+    "tr": {
+        "tablet": "Tablet",
+        "liquid": "Sıvı",
+        "drops": "Damla",
+        "capsule": "Kapsül",
+        "injection": "Enjeksiyon",
+        "patch": "Bant",
+        "inhaler": "İnhaler",
+        "powder": "Toz",
+        "spray": "Sprey"
+    }
+}
+
+# The account device's model, as the app calls the feature.
+SYNC_WORD: Final = {
+    "de": "iCloud-Synchronisation",
+    "en": "iCloud sync",
+    "es": "Sincronización con iCloud",
+    "it": "Sincronizzazione iCloud",
+    "tr": "iCloud eşitlemesi",
+}

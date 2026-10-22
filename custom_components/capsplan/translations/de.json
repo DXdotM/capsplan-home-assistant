@@ -113,12 +113,14 @@
     "step": {
       "init": {
         "title": "CapsPlan",
-        "description": "Ändern, wessen CapsPlan das ist. Bestehende Entitäts-IDs bleiben gleich.",
+        "description": "Wessen CapsPlan das ist und wie Medikamente angezeigt werden. Bestehende Entitäts-IDs bleiben gleich.",
         "data": {
-          "person": "Name (optional)"
+          "person": "Name (optional)",
+          "hide_names": "Medikamentennamen ausblenden"
         },
         "data_description": {
-          "person": "Wessen CapsPlan ist das? Nur nötig, wenn mehrere Personen ihr CapsPlan verbinden, z. B. „Anna“. Ihre Medikamente heißen dann „Metformin (Anna)“. Jede Apple-ID am besten in einem privaten Browserfenster anmelden."
+          "person": "Wessen CapsPlan ist das? Nur nötig, wenn mehrere Personen ihr CapsPlan verbinden, z. B. „Anna“. Ihre Medikamente heißen dann „Metformin (Anna)“. Jede Apple-ID am besten in einem privaten Browserfenster anmelden.",
+          "hide_names": "Zeigt überall in Home Assistant „Medikament 1“, „Medikament 2“ … statt der Namen – praktisch für Dashboards, die andere sehen."
         }
       }
     }

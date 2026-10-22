@@ -1,0 +1,128 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Accedi a iCloud",
+        "description": "CapsPlan legge i tuoi farmaci dall'account iCloud con cui si sincronizza CapsPlan (CapsPlan → Impostazioni → Backup → Sincronizzazione iCloud).\n\n1. Apri [la pagina di accesso di CapsPlan]({sign_in_url}) e accedi con il tuo ID Apple.\n2. Copia il token mostrato dalla pagina e incollalo qui.\n\nIl token dà accesso solo ai dati di CapsPlan. Resta in Home Assistant.",
+        "data": {
+          "web_auth_token": "Token di accesso",
+          "person": "Nome (facoltativo)"
+        },
+        "data_description": {
+          "web_auth_token": "Mostrato sulla pagina di accesso di CapsPlan dopo l'accesso.",
+          "person": "Di chi è questo CapsPlan? Serve solo se più persone collegano il proprio CapsPlan, ad es. \"Anna\". I suoi farmaci appariranno come \"Metformina (Anna)\". Accedi con ogni ID Apple in una finestra privata del browser."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Accedi di nuovo",
+        "description": "L'accesso a iCloud è scaduto. Apri [la pagina di accesso di CapsPlan]({sign_in_url}), accedi di nuovo e incolla il nuovo token.",
+        "data": {
+          "web_auth_token": "Token di accesso"
+        },
+        "data_description": {
+          "web_auth_token": "Mostrato sulla pagina di accesso di CapsPlan dopo l'accesso."
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Il token non è (più) valido. Accedi di nuovo sulla pagina e incolla subito il nuovo token. Gli account con Protezione avanzata dei dati non possono accedere, vedi la documentazione.",
+      "cannot_connect": "Impossibile raggiungere iCloud. Riprova più tardi."
+    },
+    "abort": {
+      "already_configured": "Questo ID Apple è già configurato.",
+      "reauth_successful": "Accesso eseguito di nuovo.",
+      "wrong_account": "Questo token appartiene a un altro ID Apple."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "next_dose": {
+        "name": "Prossima assunzione"
+      },
+      "taken_today": {
+        "name": "Prese oggi"
+      },
+      "last_taken": {
+        "name": "Ultima assunzione"
+      },
+      "current_dose": {
+        "name": "Dose attuale"
+      },
+      "stock": {
+        "name": "Scorta"
+      },
+      "next_dose_any": {
+        "name": "Prossima assunzione"
+      },
+      "open_doses": {
+        "name": "Numero aperte"
+      },
+      "adherence_7d": {
+        "name": "Aderenza (7 giorni)"
+      },
+      "last_sync": {
+        "name": "Ultima sincronizzazione"
+      },
+      "stock_units": {
+        "name": "Scorta",
+        "unit_of_measurement": "unità"
+      },
+      "supply_days": {
+        "name": "Autonomia"
+      },
+      "next_doses_text": {
+        "name": "Prossime"
+      },
+      "open_doses_text": {
+        "name": "Assunzioni aperte"
+      },
+      "remaining_today": {
+        "name": "Ancora da prendere oggi"
+      }
+    },
+    "binary_sensor": {
+      "dose_open": {
+        "name": "Assunzione aperta",
+        "state": {
+          "on": "Aperta",
+          "off": "Fatto"
+        }
+      },
+      "stock_low": {
+        "name": "Scorta bassa",
+        "state": {
+          "on": "Bassa",
+          "off": "OK"
+        }
+      },
+      "any_dose_open": {
+        "name": "Assunzione aperta",
+        "state": {
+          "on": "Aperta",
+          "off": "Fatto"
+        }
+      }
+    },
+    "calendar": {
+      "doses": {
+        "name": "Assunzioni"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "CapsPlan",
+        "description": "Di chi è questo CapsPlan e come vengono mostrati i farmaci. Gli ID entità esistenti restano invariati.",
+        "data": {
+          "person": "Nome (facoltativo)",
+          "hide_names": "Nascondi i nomi dei farmaci"
+        },
+        "data_description": {
+          "person": "Di chi è questo CapsPlan? Serve solo se più persone collegano il proprio CapsPlan, ad es. \"Anna\". I suoi farmaci appariranno come \"Metformina (Anna)\". Accedi con ogni ID Apple in una finestra privata del browser.",
+          "hide_names": "Mostra \"Farmaco 1\", \"Farmaco 2\" … al posto dei nomi in tutto Home Assistant: utile per dashboard visibili ad altri."
+        }
+      }
+    }
+  }
+}

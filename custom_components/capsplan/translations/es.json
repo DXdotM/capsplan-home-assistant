@@ -1,0 +1,128 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Iniciar sesión en iCloud",
+        "description": "CapsPlan lee tus medicamentos de la cuenta de iCloud con la que se sincroniza CapsPlan (CapsPlan → Ajustes → Copias de seguridad → Sincronización con iCloud).\n\n1. Abre [la página de inicio de sesión de CapsPlan]({sign_in_url}) e inicia sesión con tu Apple ID.\n2. Copia el token que muestra la página y pégalo aquí.\n\nEl token solo da acceso a los datos de CapsPlan. Se queda en Home Assistant.",
+        "data": {
+          "web_auth_token": "Token de inicio de sesión",
+          "person": "Nombre (opcional)"
+        },
+        "data_description": {
+          "web_auth_token": "Aparece en la página de inicio de sesión de CapsPlan después de iniciar sesión.",
+          "person": "¿De quién es este CapsPlan? Solo hace falta si varias personas conectan su CapsPlan, p. ej. \"Ana\". Sus medicamentos se mostrarán como \"Metformina (Ana)\". Inicia sesión con cada Apple ID en una ventana privada del navegador."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Volver a iniciar sesión",
+        "description": "La sesión de iCloud ha caducado. Abre [la página de inicio de sesión de CapsPlan]({sign_in_url}), vuelve a iniciar sesión y pega el nuevo token.",
+        "data": {
+          "web_auth_token": "Token de inicio de sesión"
+        },
+        "data_description": {
+          "web_auth_token": "Aparece en la página de inicio de sesión de CapsPlan después de iniciar sesión."
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "El token no es válido (o ya no lo es). Vuelve a iniciar sesión en la página y pega el nuevo token enseguida. Las cuentas con Protección de datos avanzada no pueden iniciar sesión, consulta la documentación.",
+      "cannot_connect": "No se ha podido conectar con iCloud. Inténtalo más tarde."
+    },
+    "abort": {
+      "already_configured": "Este Apple ID ya está configurado.",
+      "reauth_successful": "Sesión iniciada de nuevo.",
+      "wrong_account": "Este token pertenece a otro Apple ID."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "next_dose": {
+        "name": "Próxima toma"
+      },
+      "taken_today": {
+        "name": "Tomadas hoy"
+      },
+      "last_taken": {
+        "name": "Última toma"
+      },
+      "current_dose": {
+        "name": "Dosis actual"
+      },
+      "stock": {
+        "name": "Existencias"
+      },
+      "next_dose_any": {
+        "name": "Próxima toma"
+      },
+      "open_doses": {
+        "name": "Número pendientes"
+      },
+      "adherence_7d": {
+        "name": "Adherencia (7 días)"
+      },
+      "last_sync": {
+        "name": "Última sincronización"
+      },
+      "stock_units": {
+        "name": "Existencias",
+        "unit_of_measurement": "unidades"
+      },
+      "supply_days": {
+        "name": "Duración"
+      },
+      "next_doses_text": {
+        "name": "A continuación"
+      },
+      "open_doses_text": {
+        "name": "Tomas pendientes"
+      },
+      "remaining_today": {
+        "name": "Por tomar hoy"
+      }
+    },
+    "binary_sensor": {
+      "dose_open": {
+        "name": "Toma pendiente",
+        "state": {
+          "on": "Pendiente",
+          "off": "Hecho"
+        }
+      },
+      "stock_low": {
+        "name": "Existencias bajas",
+        "state": {
+          "on": "Bajas",
+          "off": "OK"
+        }
+      },
+      "any_dose_open": {
+        "name": "Toma pendiente",
+        "state": {
+          "on": "Pendiente",
+          "off": "Hecho"
+        }
+      }
+    },
+    "calendar": {
+      "doses": {
+        "name": "Tomas"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "CapsPlan",
+        "description": "De quién es este CapsPlan y cómo se muestran los medicamentos. Los ID de entidad existentes no cambian.",
+        "data": {
+          "person": "Nombre (opcional)",
+          "hide_names": "Ocultar nombres de medicamentos"
+        },
+        "data_description": {
+          "person": "¿De quién es este CapsPlan? Solo hace falta si varias personas conectan su CapsPlan, p. ej. \"Ana\". Sus medicamentos se mostrarán como \"Metformina (Ana)\". Inicia sesión con cada Apple ID en una ventana privada del navegador.",
+          "hide_names": "Muestra \"Medicamento 1\", \"Medicamento 2\" … en lugar de los nombres en todo Home Assistant; útil para paneles que ven otras personas."
+        }
+      }
+    }
+  }
+}

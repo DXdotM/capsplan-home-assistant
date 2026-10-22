@@ -249,7 +249,74 @@ async def test_rename_person(hass: HomeAssistant, setup) -> None:
         await hass.async_block_till_done()
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.title == "CapsPlan Dominique"
-    assert entry.options == {"person": "Dominique"}
+    assert entry.options == {"person": "Dominique", "hide_names": False}
     # Existing entity ids stay; the names follow.
     state = hass.states.get("sensor.ramipril_next_dose")
     assert state.attributes["friendly_name"] == "Ramipril (Dominique) Next dose"
+
+
+async def test_removed_and_paused_medications_disappear(
+    hass: HomeAssistant, setup, freezer: FrozenDateTimeFactory
+) -> None:
+    from homeassistant.helpers import device_registry as dr
+
+    entry, changes = setup
+    registry = dr.async_get(hass)
+
+    def med_device() -> bool:
+        return any(
+            (DOMAIN, f"{entry.entry_id}_{MED}") in d.identifiers
+            for d in dr.async_entries_for_config_entry(registry, entry.entry_id)
+        )
+
+    assert med_device()
+    # Paused in the app (isActive false) …
+    changes.return_value = (
+        [record(f"medication-{MED}", "medication", medication(isActive=False))], "sync-2"
+    )
+    freezer.tick(timedelta(minutes=6))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert not med_device()
+    assert hass.states.get("sensor.ramipril_next_dose") is None
+    # … and back: the device returns.
+    changes.return_value = ([record(f"medication-{MED}", "medication", medication())], "sync-3")
+    freezer.tick(timedelta(minutes=6))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert med_device()
+    assert hass.states.get("sensor.ramipril_next_dose") is not None
+
+
+async def test_hide_names(hass: HomeAssistant, setup) -> None:
+    entry, _ = setup
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    with patch(f"{CLIENT}.zone_changes", return_value=(sample_records(), "s")):
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {"person": "", "hide_names": True}
+        )
+        await hass.async_block_till_done()
+    assert entry.options["hide_names"] is True
+    text = hass.states.get("sensor.capsplan_up_next").state
+    assert "Medication 1" in text and "Ramipril" not in text
+
+
+async def test_network_error_never_logs_the_token(hass: HomeAssistant) -> None:
+    from aiohttp import ClientResponseError, RequestInfo
+    from multidict import CIMultiDict, CIMultiDictProxy
+    from yarl import URL
+
+    from custom_components.capsplan.api import CapsPlanClient, CapsPlanError
+
+    url = URL("https://api.apple-cloudkit.com/x?ckWebAuthToken=SECRET")
+    info = RequestInfo(url, "GET", CIMultiDictProxy(CIMultiDict()), url)
+
+    class Session:
+        async def get(self, *a, **k):
+            raise ClientResponseError(info, (), status=500, message="boom")
+
+    client = CapsPlanClient(Session(), "api", "SECRET")
+    with pytest.raises(CapsPlanError) as err:
+        await client.current_user()
+    assert "SECRET" not in str(err.value)
+    assert err.value.__cause__ is None

@@ -19,6 +19,15 @@
 - 🔒 **Deine Daten bleiben deine**: Home Assistant liest sie direkt aus *deiner* iCloud. Nichts läuft über Dritte.
 - 👀 **Nur lesend**: Die Integration verändert nie etwas an deinen Daten in CapsPlan.
 
+<p align="center">
+  <img src="docs/images/overview-de.jpg" width="250" alt="Übersichtskarte: Überfälliges, dann der Rest von heute">
+  &nbsp;
+  <img src="docs/images/device-de.jpg" width="250" alt="Ein Medikament als Gerät mit seinen Sensoren">
+  &nbsp;
+  <img src="docs/images/setup-de.jpg" width="250" alt="Einrichtung mit Anmelde-Token">
+</p>
+<p align="center"><sub>Demo-Daten. Links die <a href="#übersicht-erst-überfälliges-dann-der-rest-von-heute">Übersichtskarte</a> mit Kacheln, Mitte ein Medikament mit seinen Sensoren, rechts die Einrichtung.</sub></p>
+
 ## Was du bekommst
 
 Jedes Medikament wird ein eigenes Gerät in Home Assistant (Entitäts-IDs mit deutscher Sprache):
@@ -50,7 +59,13 @@ Dazu ein Gerät **CapsPlan** für alles zusammen:
 
 Die Listen-Sensoren enthalten die Einnahmen zusätzlich als Attribut `doses` (Medikament, Zeit, Dosis, Einheit, Status) und `count`.
 
-Mit englischer Home-Assistant-Sprache heißen Namen und IDs englisch (z. B. `sensor.metformin_supply`). Bedarfsmedikamente bekommen nur die Entitäten, die für sie sinnvoll sind.
+Gut zu wissen:
+
+- **Einnahmen von gestern**, die weder bestätigt noch übersprungen wurden, bleiben bis zum Ende des Folgetags *offen* – genau wie CapsPlan sie zeigt („von gestern“); in den Listen stehen sie mit Datum.
+- **Pausierte oder abgeschlossene Medikamente** (in CapsPlan ausgeschaltet) werden nicht angezeigt, **gelöschte Medikamente** verschwinden automatisch. Wieder eingeschaltet, kommen sie zurück.
+- **Namen** folgen der Sprache von Home Assistant – Deutsch, Englisch, Spanisch, Italienisch und Türkisch wie die App – und damit auch die Entitäts-IDs: auf Englisch heißt `sensor.metformin_reichweite` `sensor.metformin_supply`.
+- Bedarfsmedikamente bekommen nur die Entitäten, die für sie sinnvoll sind.
+- Medikamentennamen lieber nicht zeigen? **Medikamentennamen ausblenden** einschalten (siehe [Datenschutz und Sicherheit](#datenschutz-und-sicherheit)).
 
 ## Voraussetzungen
 
@@ -163,12 +178,12 @@ automation:
 
 ```
 ### ⏰ Überfällig
-- Metformin 500 mg · geplant 05:30 · seit 8 Std. 10 Min.
-- Ramipril 5 mg · geplant 12:00 · seit 1 Std. 40 Min.
+- gestern 21:00  Ramipril 5 mg · seit 19 Std.
+- 12:00  Metformin 500 mg · seit 1 Std.
 ───────────────
 ### 🕒 Heute noch geplant
-- 16:00 Metformin 500 mg
-- 19:00 Ramipril 5 mg
+- 16:00  Metformin 500 mg
+- 19:00  Ramipril 5 mg
 ```
 
 Dashboard → Bearbeiten → Karte hinzufügen → *Manuell*, einfügen ([`examples/overview-card.de.yaml`](examples/overview-card.de.yaml)):
@@ -188,7 +203,7 @@ content: |
   ### ⏰ Überfällig
   {%- for d in overdue %}
   {%- set m = ((now() - as_datetime(d.time)).total_seconds() // 60) | int %}
-  - **{{ d.medication }}**{% if d.dose %} {{ '%g' | format(d.dose) }} {{ d.unit }}{% endif %}{% if ns.lists > 1 and d.person %} ({{ d.person }}){% endif %} · geplant {{ as_datetime(d.time).strftime('%H:%M') }} · seit {% if m >= 60 %}{{ m // 60 }} Std. {% endif %}{{ m % 60 }} Min.
+  - **{% if as_datetime(d.time).date() < now().date() %}gestern {% endif %}{{ as_datetime(d.time).strftime('%H:%M') }}** {{ d.medication }}{% if d.dose %} {{ '%g' | format(d.dose) }} {{ d.unit }}{% endif %}{% if ns.lists > 1 and d.person %} ({{ d.person }}){% endif %} · {% if m >= 60 %}seit {{ m // 60 }} Std.{% else %}seit {{ m }} Min.{% endif %}
   {%- else %}
   ✓ Nichts überfällig
   {%- endfor %}
@@ -218,19 +233,30 @@ content: >-
   **Als Nächstes:** {{ states('sensor.capsplan_als_nachstes') }}
 ```
 
-Oder als Liste von Entitäten:
+Oder als Kacheln – je eine Zeile, gut für Wand-Tablets:
 
 ```yaml
-type: entities
-title: Medikamente
-entities:
-  - entity: sensor.capsplan_offene_einnahmen
-  - entity: sensor.capsplan_heute_noch
-  - entity: sensor.capsplan_als_nachstes
-  - entity: sensor.capsplan_einnahmetreue_7_tage
+type: grid
+columns: 2
+square: false
+cards:
+  - type: tile
+    entity: binary_sensor.capsplan_einnahme_offen
+    name: Einnahme
+  - type: tile
+    entity: sensor.capsplan_anzahl_offen
+    name: Offen
+  - type: tile
+    entity: sensor.capsplan_als_nachstes
+    name: Als Nächstes
+  - type: tile
+    entity: sensor.capsplan_einnahmetreue_7_tage
+    name: Einnahmetreue
 ```
 
 Der Tag auf einen Blick – jede Einnahme mit ✓ / ✗ / ⏰:
+
+<img src="docs/images/calendar-de.jpg" width="300" alt="Kalender mit genommenen, überfälligen und geplanten Einnahmen">
 
 ```yaml
 type: calendar
@@ -254,12 +280,35 @@ Weitere Beispiele (Durchsage vor der Einnahme, Vorratswarnung, Ausschleich-Dosis
 - **Verzögerung**: Änderungen erscheinen, sobald CapsPlan sie mit iCloud abgeglichen hat und der nächste Abruf lief – meist innerhalb weniger Minuten.
 - **Berechnet, nicht kopiert**: Zeigt die Integration bei einem ungewöhnlichen Einnahmeplan etwas anderes als die App, bitte ein [Issue öffnen](https://github.com/DXdotM/capsplan-home-assistant/issues).
 
-## Datenschutz
+## Datenschutz und Sicherheit
 
-- Medikamentendaten sind Gesundheitsdaten. Diese Integration liest sie nur aus deiner iCloud in dein Home Assistant. Es gibt keinen Server dazwischen, keine Analyse, keine Telemetrie.
-- Die lokale Kopie liegt in `.storage/capsplan.<eintrag>` deiner Home-Assistant-Konfiguration und wird gelöscht, wenn du die Integration entfernst.
+**Wie die Daten laufen.** Home Assistant spricht nur mit Apple (`api.apple-cloudkit.com`, HTTPS). Es gibt keinen Server von uns oder Dritten dazwischen, keine Analyse, keine Telemetrie. Apple trennt die Daten jeder Apple-ID: Die Integration sieht immer nur die CapsPlan-Daten der Apple-ID, die sich angemeldet hat.
+
+**Die Tokens.**
+- Der *API-Token* im Code ist absichtlich öffentlich. Er benennt nur den iCloud-Container von CapsPlan und gibt allein keinen Zugriff auf Daten.
+- Das *Anmelde-Token* gilt nur für die Daten von CapsPlan – nicht für Fotos, Mails oder andere iCloud-Daten. Apple ersetzt es bei jeder Anfrage, ein altes ist wertlos.
+- Es ist **nicht nur zum Lesen**: Wer dein aktuelles Token hätte, könnte auch CapsPlan-Daten in deiner iCloud ändern. Die Integration selbst liest nur. Behandle Home Assistant wie den Ort, an dem deine Passwörter liegen (siehe unten).
+- Das Token landet nie in Protokollen oder Diagnosen; Fehlermeldungen werden von allem bereinigt, was es enthalten könnte.
+
+**Die Anmeldeseite** ist eine statische Seite in diesem Repository ([`docs/index.html`](docs/index.html)). Ihre Content Security Policy erlaubt nur Verbindungen zu Apple, sie sendet keinen Referrer, lädt nichts von anderen Servern und entfernt das Token sofort aus der Adresszeile. Apple übergibt das Token in der Seitenadresse, daher taucht es kurz in den Zugriffsprotokollen von GitHub Pages auf – es verfällt, sobald Home Assistant es benutzt.
+
+**In Home Assistant.** Token und eine lokale Kopie deiner CapsPlan-Daten liegen in `.storage/`, wie die Zugangsdaten jeder Integration. Die lokale Kopie wird gelöscht, wenn du die Integration entfernst. Empfehlungen:
+
+- **Backups** von Home Assistant **verschlüsselt** lassen (Standard).
+- Medikamentendaten sind Gesundheitsdaten. CapsPlan-Entitäten nicht für Sprachassistenten oder Alexa/Google freigeben, wenn andere sie fragen können.
+- Für Dashboards, die andere sehen, **Medikamentennamen ausblenden** (⚙️ Konfigurieren) – dann steht überall „Medikament 1“, „Medikament 2“ …
+- Optional den Verlauf aus dem Recorder heraushalten (die Konto-Entitäten plus eine Zeile pro Medikament):
+
+  ```yaml
+  recorder:
+    exclude:
+      entity_globs:
+        - "*.capsplan_*"
+        - "*.metformin_*"
+  ```
+
 - Diagnose-Downloads enthalten nur Anzahlen und Zustände – keine Medikamentennamen, keine Dosen, kein Token.
-- Zugriff jederzeit beenden: die Integration in Home Assistant löschen. Das gespeicherte Token wird dabei mit gelöscht und nie wieder verwendet.
+- Zugriff beenden: die Integration löschen. Das gespeicherte Token wird dabei mit gelöscht und nie wieder verwendet.
 
 ## Fehlerbehebung
 

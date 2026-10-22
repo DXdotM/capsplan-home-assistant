@@ -1,0 +1,128 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "iCloud'a giriş yap",
+        "description": "CapsPlan, ilaçlarını CapsPlan'ın eşitleme yaptığı iCloud hesabından okur (CapsPlan → Ayarlar → Yedekler → iCloud eşitlemesi).\n\n1. [CapsPlan giriş sayfasını]({sign_in_url}) aç ve Apple Kimliğinle giriş yap.\n2. Sayfanın gösterdiği belirteci kopyala ve buraya yapıştır.\n\nBelirteç yalnızca CapsPlan verilerine erişim sağlar. Home Assistant'ta kalır.",
+        "data": {
+          "web_auth_token": "Giriş belirteci",
+          "person": "Ad (isteğe bağlı)"
+        },
+        "data_description": {
+          "web_auth_token": "Giriş yaptıktan sonra CapsPlan giriş sayfasında gösterilir.",
+          "person": "Bu CapsPlan kimin? Yalnızca birden fazla kişi kendi CapsPlan'ını bağlıyorsa gerekir, örn. \"Ayşe\". İlaçları o zaman \"Metformin (Ayşe)\" olarak gösterilir. Her Apple Kimliğiyle gizli bir tarayıcı penceresinde giriş yap."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Yeniden giriş yap",
+        "description": "iCloud girişinin süresi doldu. [CapsPlan giriş sayfasını]({sign_in_url}) aç, yeniden giriş yap ve yeni belirteci yapıştır.",
+        "data": {
+          "web_auth_token": "Giriş belirteci"
+        },
+        "data_description": {
+          "web_auth_token": "Giriş yaptıktan sonra CapsPlan giriş sayfasında gösterilir."
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Belirteç geçerli değil (artık). Giriş sayfasında yeniden giriş yap ve yeni belirteci hemen yapıştır. Gelişmiş Veri Koruması açık olan hesaplar giriş yapamaz, belgelere bak.",
+      "cannot_connect": "iCloud'a ulaşılamadı. Daha sonra tekrar dene."
+    },
+    "abort": {
+      "already_configured": "Bu Apple Kimliği zaten ayarlı.",
+      "reauth_successful": "Yeniden giriş yapıldı.",
+      "wrong_account": "Bu belirteç başka bir Apple Kimliğine ait."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "next_dose": {
+        "name": "Sonraki alım"
+      },
+      "taken_today": {
+        "name": "Bugün alınan"
+      },
+      "last_taken": {
+        "name": "Son alım"
+      },
+      "current_dose": {
+        "name": "Güncel doz"
+      },
+      "stock": {
+        "name": "Stok"
+      },
+      "next_dose_any": {
+        "name": "Sonraki alım"
+      },
+      "open_doses": {
+        "name": "Açık sayısı"
+      },
+      "adherence_7d": {
+        "name": "Uyum (7 gün)"
+      },
+      "last_sync": {
+        "name": "Son eşitleme"
+      },
+      "stock_units": {
+        "name": "Stok",
+        "unit_of_measurement": "adet"
+      },
+      "supply_days": {
+        "name": "Yeterlilik"
+      },
+      "next_doses_text": {
+        "name": "Sıradaki"
+      },
+      "open_doses_text": {
+        "name": "Açık alımlar"
+      },
+      "remaining_today": {
+        "name": "Bugün kalan"
+      }
+    },
+    "binary_sensor": {
+      "dose_open": {
+        "name": "Alım açık",
+        "state": {
+          "on": "Açık",
+          "off": "Tamam"
+        }
+      },
+      "stock_low": {
+        "name": "Stok az",
+        "state": {
+          "on": "Az",
+          "off": "Yeterli"
+        }
+      },
+      "any_dose_open": {
+        "name": "Alım açık",
+        "state": {
+          "on": "Açık",
+          "off": "Tamam"
+        }
+      }
+    },
+    "calendar": {
+      "doses": {
+        "name": "Alımlar"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "CapsPlan",
+        "description": "Bu CapsPlan kimin ve ilaçlar nasıl gösterilsin. Mevcut varlık kimlikleri aynı kalır.",
+        "data": {
+          "person": "Ad (isteğe bağlı)",
+          "hide_names": "İlaç adlarını gizle"
+        },
+        "data_description": {
+          "person": "Bu CapsPlan kimin? Yalnızca birden fazla kişi kendi CapsPlan'ını bağlıyorsa gerekir, örn. \"Ayşe\". İlaçları o zaman \"Metformin (Ayşe)\" olarak gösterilir. Her Apple Kimliğiyle gizli bir tarayıcı penceresinde giriş yap.",
+          "hide_names": "Home Assistant'ın her yerinde adlar yerine \"İlaç 1\", \"İlaç 2\" … gösterir; başkalarının gördüğü panolar için kullanışlı."
+        }
+      }
+    }
+  }
+}

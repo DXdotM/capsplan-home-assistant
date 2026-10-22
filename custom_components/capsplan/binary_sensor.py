@@ -31,10 +31,8 @@ MEDICATION_BINARY: tuple[MedicationBinaryDescription, ...] = (
     MedicationBinaryDescription(
         key="dose_open",
         translation_key="dose_open",
-        value=lambda s: s.open_today > 0,
-        attrs=lambda s: {
-            "open": [d.time.isoformat() for d in s.today if d.status == "open"],
-        },
+        value=lambda s: bool(s.overdue),
+        attrs=lambda s: {"open": [d.time.isoformat() for d in s.overdue]},
         exists=lambda s: not s.medication.on_demand,
     ),
     MedicationBinaryDescription(
@@ -58,7 +56,10 @@ async def async_setup_entry(
     @callback
     def _add_new() -> None:
         new = []
-        for sid, state in coordinator.data.medications.items():
+        meds = coordinator.data.medications
+        # Forget removed medications, so they come back if switched on again.
+        known.intersection_update({k for k in known if k[0] in meds})
+        for sid, state in meds.items():
             for desc in MEDICATION_BINARY:
                 if (sid, desc.key) not in known and desc.exists(state):
                     known.add((sid, desc.key))

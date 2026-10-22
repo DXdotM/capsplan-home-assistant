@@ -18,7 +18,7 @@ content: |
   ### ⏰ Overdue
   {%- for d in overdue %}
   {%- set m = ((now() - as_datetime(d.time)).total_seconds() // 60) | int %}
-  - **{{ d.medication }}**{% if d.dose %} {{ '%g' | format(d.dose) }} {{ d.unit }}{% endif %}{% if ns.lists > 1 and d.person %} ({{ d.person }}){% endif %} · planned {{ as_datetime(d.time).strftime('%H:%M') }} · {% if m >= 60 %}{{ m // 60 }} h {% endif %}{{ m % 60 }} min overdue
+  - **{% if as_datetime(d.time).date() < now().date() %}yesterday {% endif %}{{ as_datetime(d.time).strftime('%H:%M') }}** {{ d.medication }}{% if d.dose %} {{ '%g' | format(d.dose) }} {{ d.unit }}{% endif %}{% if ns.lists > 1 and d.person %} ({{ d.person }}){% endif %} · {% if m >= 60 %}{{ m // 60 }} h overdue{% else %}{{ m }} min overdue{% endif %}
   {%- else %}
   ✓ Nothing overdue
   {%- endfor %}

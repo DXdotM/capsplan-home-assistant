@@ -24,6 +24,13 @@ from .entity import CapsPlanEntity, CapsPlanMedicationEntity, person_of
 PARALLEL_UPDATES = 0
 
 
+def _number(value: float | None) -> float | int | None:
+    """25 instead of 25.0 (shown as "25,0 mg" otherwise)."""
+    if value is not None and float(value).is_integer():
+        return int(value)
+    return value
+
+
 def _dose_list(state: logic.MedicationState) -> list[dict[str, Any]]:
     return [
         {
@@ -63,7 +70,7 @@ MEDICATION_SENSORS: tuple[MedicationSensorDescription, ...] = (
         value=lambda s: s.taken_today,
         attrs=lambda s: {
             "planned": len(s.today),
-            "open": s.open_today,
+            "open": len(s.overdue),
             "skipped": sum(1 for d in s.today if d.status == "skipped"),
             "doses": _dose_list(s),
         },
@@ -79,7 +86,7 @@ MEDICATION_SENSORS: tuple[MedicationSensorDescription, ...] = (
         key="current_dose",
         translation_key="current_dose",
         state_class=SensorStateClass.MEASUREMENT,
-        value=lambda s: s.current_dose,
+        value=lambda s: _number(s.current_dose),
         unit=lambda s: s.medication.dose_unit,
         attrs=lambda s: {"tapering": s.medication.tapering},
         exists=lambda s: not s.medication.on_demand
@@ -155,25 +162,30 @@ def _next_text(data: CapsPlanData) -> str:
     return _clip(f"{_when(data, data.next_group[0][1].time)} · {labels}")
 
 
-def _dose_items(doses: list[tuple[logic.MedicationState, logic.PlannedDose]], mark_open: bool = False) -> str:
-    """"⏰ 12:00 Mestinon 60 mg, 16:00 Mestinon 60 mg" ("–" when empty)."""
+def _dose_items(
+    data: CapsPlanData,
+    doses: list[tuple[logic.MedicationState, logic.PlannedDose]],
+    mark_open: bool = False,
+) -> str:
+    """"⏰ 12:00 Metformin 500 mg, 16:00 Ramipril 5 mg" ("–" when empty);
+    doses from yesterday carry their date."""
     if not doses:
         return "–"
     return _clip(
         ", ".join(
             ("⏰ " if mark_open and d.status == "open" else "")
-            + f"{d.time.strftime('%H:%M')} {logic.dose_label(s.medication, d.dose)}"
+            + f"{_when(data, d.time)} {logic.dose_label(s.medication, d.dose)}"
             for s, d in doses
         )
     )
 
 
 def _open_text(data: CapsPlanData) -> str:
-    return _dose_items(data.open_list)
+    return _dose_items(data, data.open_list)
 
 
 def _remaining_text(data: CapsPlanData) -> str:
-    return _dose_items(data.remaining_today, mark_open=True)
+    return _dose_items(data, data.remaining_today, mark_open=True)
 
 
 def _list_attrs(
@@ -273,7 +285,10 @@ async def async_setup_entry(
     @callback
     def _add_new() -> None:
         new = []
-        for sid, state in coordinator.data.medications.items():
+        meds = coordinator.data.medications
+        # Forget removed medications, so they come back if switched on again.
+        known.intersection_update({k for k in known if k[0] in meds})
+        for sid, state in meds.items():
             for desc in MEDICATION_SENSORS:
                 if (sid, desc.key) not in known and desc.exists(state):
                     known.add((sid, desc.key))

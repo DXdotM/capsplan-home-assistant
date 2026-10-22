@@ -65,7 +65,9 @@ class CapsPlanClient:
                     )
                     status = resp.status
             except (TimeoutError, ClientError, ValueError) as err:
-                raise CapsPlanError(f"iCloud not reachable: {err}") from err
+                # Never the exception text: some aiohttp errors contain the
+                # request URL, and with it the sign-in token.
+                raise CapsPlanError(f"iCloud not reachable ({type(err).__name__})") from None
 
             if new_token and new_token != self.web_auth_token:
                 self.web_auth_token = new_token
