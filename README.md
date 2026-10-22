@@ -81,7 +81,7 @@ Copy the folder `custom_components/capsplan` from the [latest release](https://g
 
 1. Settings → Devices & services → **Add integration** → **CapsPlan**.
 2. Open the **[CapsPlan sign-in page](https://dxdotm.github.io/capsplan-home-assistant/)** and click *Sign in with Apple ID*.
-3. Sign in with the Apple ID that CapsPlan syncs with and tick **Keep me signed in**.
+3. Sign in with the Apple ID that CapsPlan syncs with. (If Apple offers *Keep me signed in*, tick it.)
 4. Apple sends you back to the page, which now shows your **sign-in token**. Copy it.
 5. Paste it into the setup dialog in Home Assistant right away and submit.
 

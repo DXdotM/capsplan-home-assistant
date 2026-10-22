@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Bei iCloud anmelden",
-        "description": "CapsPlan liest deine Medikamente aus dem iCloud-Account, mit dem CapsPlan synchronisiert (CapsPlan → Einstellungen → Backups → iCloud-Synchronisation).\n\n1. Öffne [die CapsPlan-Anmeldeseite]({sign_in_url}) und melde dich mit deiner Apple-ID an. Setze den Haken bei **Angemeldet bleiben**.\n2. Kopiere das angezeigte Token und füge es hier ein.\n\nDas Token gibt nur Zugriff auf die Daten von CapsPlan. Es bleibt in Home Assistant.",
+        "description": "CapsPlan liest deine Medikamente aus dem iCloud-Account, mit dem CapsPlan synchronisiert (CapsPlan → Einstellungen → Backups → iCloud-Synchronisation).\n\n1. Öffne [die CapsPlan-Anmeldeseite]({sign_in_url}) und melde dich mit deiner Apple-ID an.\n2. Kopiere das angezeigte Token und füge es hier ein.\n\nDas Token gibt nur Zugriff auf die Daten von CapsPlan. Es bleibt in Home Assistant.",
         "data": {
           "web_auth_token": "Anmelde-Token"
         },

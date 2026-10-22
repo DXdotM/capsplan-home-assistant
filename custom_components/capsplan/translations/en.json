@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Sign in to iCloud",
-        "description": "CapsPlan reads your medications from the iCloud account that CapsPlan syncs with (CapsPlan → Settings → Backups → iCloud sync).\n\n1. Open [the CapsPlan sign-in page]({sign_in_url}) and sign in with your Apple ID. Tick **Keep me signed in**.\n2. Copy the token the page shows and paste it here.\n\nThe token only gives access to CapsPlan's own data. It stays in Home Assistant.",
+        "description": "CapsPlan reads your medications from the iCloud account that CapsPlan syncs with (CapsPlan → Settings → Backups → iCloud sync).\n\n1. Open [the CapsPlan sign-in page]({sign_in_url}) and sign in with your Apple ID.\n2. Copy the token the page shows and paste it here.\n\nThe token only gives access to CapsPlan's own data. It stays in Home Assistant.",
         "data": {
           "web_auth_token": "Sign-in token"
         },
