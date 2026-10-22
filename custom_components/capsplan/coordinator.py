@@ -1,0 +1,110 @@
+"""Keeps CapsPlan's data in Home Assistant up to date."""
+
+from __future__ import annotations
+
+import logging
+from dataclasses import dataclass
+from datetime import datetime
+
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers.storage import Store
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
+
+from . import logic
+from .api import CapsPlanAuthError, CapsPlanClient, CapsPlanError
+from .const import DOMAIN, STORAGE_VERSION, UPDATE_INTERVAL
+
+_LOGGER = logging.getLogger(__name__)
+
+type CapsPlanConfigEntry = ConfigEntry[CapsPlanCoordinator]
+
+
+@dataclass
+class CapsPlanData:
+    """Everything the entities show, computed for one point in time."""
+
+    now: datetime
+    medications: dict[str, logic.MedicationState]
+    open_doses: int
+    next_dose: tuple[logic.MedicationState, logic.PlannedDose] | None
+    adherence_7d: float | None
+    last_sync: datetime | None
+
+
+class CapsPlanCoordinator(DataUpdateCoordinator[CapsPlanData]):
+    """Fetches changes from iCloud every few minutes and recomputes the
+    schedule state (open, next dose, ...) every minute in between."""
+
+    config_entry: CapsPlanConfigEntry
+
+    def __init__(self, hass: HomeAssistant, entry: CapsPlanConfigEntry, client: CapsPlanClient) -> None:
+        super().__init__(
+            hass,
+            _LOGGER,
+            config_entry=entry,
+            name=DOMAIN,
+            update_interval=UPDATE_INTERVAL,
+        )
+        self.client = client
+        self._store: Store[dict] = Store(hass, STORAGE_VERSION, f"{DOMAIN}.{entry.entry_id}")
+        self._sync = logic.SyncStore()
+        self._loaded = False
+        self._last_sync: datetime | None = None
+
+    async def _async_update_data(self) -> CapsPlanData:
+        if not self._loaded:
+            self._sync = logic.SyncStore.from_dict(await self._store.async_load())
+            self._loaded = True
+        try:
+            try:
+                records, token = await self.client.zone_changes(self._sync.sync_token)
+            except CapsPlanAuthError:
+                raise
+            except CapsPlanError:
+                if self._sync.sync_token is None:
+                    raise
+                # The change token may have expired: start over with everything.
+                _LOGGER.debug("Incremental fetch failed, fetching all records again")
+                self._sync = logic.SyncStore()
+                records, token = await self.client.zone_changes(None)
+        except CapsPlanAuthError as err:
+            raise ConfigEntryAuthFailed(str(err)) from err
+        except CapsPlanError as err:
+            raise UpdateFailed(str(err)) from err
+
+        if self._sync.apply(records) or token != self._sync.sync_token:
+            self._sync.sync_token = token
+            self._store.async_delay_save(self._sync.to_dict, 10)
+        self._last_sync = dt_util.utcnow()
+        return self.compute()
+
+    def compute(self) -> CapsPlanData:
+        """Recomputes all states from the synced data for the current time."""
+        tz = dt_util.get_default_time_zone()
+        now = dt_util.now()
+        meds = logic.build(self._sync, tz)
+        states = {sid: logic.medication_state(m, now) for sid, m in meds.items()}
+        upcoming = [(s, s.next_dose) for s in states.values() if s.next_dose is not None]
+        next_dose = min(upcoming, key=lambda x: x[1].time) if upcoming else None
+        active = [m for m in meds.values() if m.active and not m.on_demand]
+        return CapsPlanData(
+            now=now,
+            medications=states,
+            open_doses=sum(s.open_today for s in states.values()),
+            next_dose=next_dose,
+            adherence_7d=logic.adherence(active, now),
+            last_sync=self._last_sync,
+        )
+
+    def refresh_state(self) -> None:
+        """Pushes freshly computed states without contacting iCloud.
+
+        Not async_set_updated_data: that would also postpone the next fetch
+        from iCloud every time, so it would never happen.
+        """
+        if self.data is not None and self.last_update_success:
+            self.data = self.compute()
+            self.async_update_listeners()

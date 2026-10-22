@@ -1,0 +1,84 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Bei iCloud anmelden",
+        "description": "CapsPlan liest deine Medikamente aus dem iCloud-Account, mit dem CapsPlan synchronisiert (CapsPlan → Einstellungen → Backups → iCloud-Synchronisation).\n\n1. Öffne [die CapsPlan-Anmeldeseite]({sign_in_url}) und melde dich mit deiner Apple-ID an. Setze den Haken bei **Angemeldet bleiben**.\n2. Kopiere das angezeigte Token und füge es hier ein.\n\nDas Token gibt nur Zugriff auf die Daten von CapsPlan. Es bleibt in Home Assistant.",
+        "data": {
+          "web_auth_token": "Anmelde-Token"
+        },
+        "data_description": {
+          "web_auth_token": "Wird auf der CapsPlan-Anmeldeseite nach der Anmeldung angezeigt."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Erneut anmelden",
+        "description": "Die iCloud-Anmeldung ist abgelaufen. Öffne [die CapsPlan-Anmeldeseite]({sign_in_url}), melde dich erneut an und füge das neue Token ein.",
+        "data": {
+          "web_auth_token": "Anmelde-Token"
+        },
+        "data_description": {
+          "web_auth_token": "Wird auf der CapsPlan-Anmeldeseite nach der Anmeldung angezeigt."
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Das Token ist nicht (mehr) gültig. Melde dich auf der Anmeldeseite erneut an und füge das neue Token gleich ein. Accounts mit erweitertem Datenschutz können sich nicht anmelden, siehe Dokumentation.",
+      "cannot_connect": "iCloud ist nicht erreichbar. Versuche es später noch einmal."
+    },
+    "abort": {
+      "already_configured": "Diese Apple-ID ist bereits eingerichtet.",
+      "reauth_successful": "Erneut angemeldet.",
+      "wrong_account": "Dieses Token gehört zu einer anderen Apple-ID."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "next_dose": {
+        "name": "Nächste Einnahme"
+      },
+      "taken_today": {
+        "name": "Heute eingenommen"
+      },
+      "last_taken": {
+        "name": "Zuletzt eingenommen"
+      },
+      "current_dose": {
+        "name": "Aktuelle Dosis"
+      },
+      "stock": {
+        "name": "Vorrat"
+      },
+      "next_dose_any": {
+        "name": "Nächste Einnahme"
+      },
+      "open_doses": {
+        "name": "Offene Einnahmen"
+      },
+      "adherence_7d": {
+        "name": "Einnahmetreue (7 Tage)"
+      },
+      "last_sync": {
+        "name": "Letzte Synchronisation"
+      },
+      "stock_units": {
+        "name": "Vorrat",
+        "unit_of_measurement": "Stück"
+      },
+      "supply_days": {
+        "name": "Reichweite"
+      }
+    },
+    "binary_sensor": {
+      "dose_open": {
+        "name": "Einnahme offen"
+      },
+      "stock_low": {
+        "name": "Vorrat niedrig"
+      },
+      "any_dose_open": {
+        "name": "Einnahme offen"
+      }
+    }
+  }
+}

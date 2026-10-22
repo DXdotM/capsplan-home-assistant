@@ -1,0 +1,90 @@
+# CapsPlan automation examples.
+# Entity ids depend on your Home Assistant language and medication names:
+# with German as language, "sensor.metformin_supply" is "sensor.metformin_reichweite".
+# Check Settings → Devices & services → CapsPlan for yours.
+
+# 1. A light shows an open dose (red) and turns off once it is confirmed.
+- alias: "Medication: light shows open dose"
+  triggers:
+    - trigger: state
+      entity_id: binary_sensor.capsplan_dose_open
+  actions:
+    - choose:
+        - conditions: "{{ trigger.to_state.state == 'on' }}"
+          sequence:
+            - action: light.turn_on
+              target: { entity_id: light.kitchen }
+              data: { color_name: red, brightness_pct: 60 }
+      default:
+        - action: light.turn_off
+          target: { entity_id: light.kitchen }
+
+# 2. Notify the family when a dose is still open after 30 minutes.
+- alias: "Medication: overdue reminder"
+  triggers:
+    - trigger: state
+      entity_id: binary_sensor.capsplan_dose_open
+      to: "on"
+      for: "00:30:00"
+  actions:
+    - action: notify.family
+      data:
+        title: "Medication"
+        message: >
+          Still open:
+          {% for d in state_attr('sensor.capsplan_open_doses', 'doses') %}
+          {{ d.medication }} ({{ as_datetime(d.time).strftime('%H:%M') }}){{ ', ' if not loop.last }}
+          {% endfor %}
+
+# 3. Speaker announcement 5 minutes before the next dose.
+- alias: "Medication: announce next dose"
+  triggers:
+    - trigger: template
+      value_template: >
+        {{ states('sensor.capsplan_next_dose') not in ['unknown', 'unavailable']
+           and (as_datetime(states('sensor.capsplan_next_dose')) - now()).total_seconds() | int
+               in range(240, 300) }}
+  actions:
+    - action: tts.speak
+      target: { entity_id: tts.home_assistant_cloud }
+      data:
+        media_player_entity_id: media_player.living_room
+        message: >
+          In five minutes: {{ state_attr('sensor.capsplan_next_dose', 'medication') }},
+          {{ state_attr('sensor.capsplan_next_dose', 'dose') }} {{ state_attr('sensor.capsplan_next_dose', 'unit') }}.
+
+# 4. Reorder in time: supply below 10 days.
+- alias: "Medication: reorder"
+  triggers:
+    - trigger: numeric_state
+      entity_id: sensor.metformin_supply
+      below: 10
+  actions:
+    - action: todo.add_item
+      target: { entity_id: todo.shopping_list }
+      data: { item: "Prescription Metformin" }
+
+# 5. Low stock warning from CapsPlan.
+- alias: "Medication: low stock"
+  triggers:
+    - trigger: state
+      entity_id: binary_sensor.metformin_stock_low
+      to: "on"
+  actions:
+    - action: notify.mobile_app_iphone
+      data:
+        message: "Metformin is running low."
+
+# 6. Tapering: tell me when the dose changes.
+- alias: "Medication: tapering dose changed"
+  triggers:
+    - trigger: state
+      entity_id: sensor.prednisolon_current_dose
+  conditions:
+    - "{{ trigger.from_state.state not in ['unknown', 'unavailable'] }}"
+  actions:
+    - action: notify.mobile_app_iphone
+      data:
+        message: >
+          Prednisolon: from today {{ trigger.to_state.state }} mg
+          (before {{ trigger.from_state.state }} mg).

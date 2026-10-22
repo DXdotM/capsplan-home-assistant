@@ -1,0 +1,84 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Sign in to iCloud",
+        "description": "CapsPlan reads your medications from the iCloud account that CapsPlan syncs with (CapsPlan → Settings → Backups → iCloud sync).\n\n1. Open [the CapsPlan sign-in page]({sign_in_url}) and sign in with your Apple ID. Tick **Keep me signed in**.\n2. Copy the token the page shows and paste it here.\n\nThe token only gives access to CapsPlan's own data. It stays in Home Assistant.",
+        "data": {
+          "web_auth_token": "Sign-in token"
+        },
+        "data_description": {
+          "web_auth_token": "Shown on the CapsPlan sign-in page after you signed in."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Sign in again",
+        "description": "The iCloud sign-in has expired. Open [the CapsPlan sign-in page]({sign_in_url}), sign in again and paste the new token.",
+        "data": {
+          "web_auth_token": "Sign-in token"
+        },
+        "data_description": {
+          "web_auth_token": "Shown on the CapsPlan sign-in page after you signed in."
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "The token is not valid (anymore). Sign in again on the sign-in page and paste the new token right away. Accounts with Advanced Data Protection cannot sign in, see the documentation.",
+      "cannot_connect": "iCloud could not be reached. Try again later."
+    },
+    "abort": {
+      "already_configured": "This Apple ID is already set up.",
+      "reauth_successful": "Signed in again.",
+      "wrong_account": "This token belongs to a different Apple ID."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "next_dose": {
+        "name": "Next dose"
+      },
+      "taken_today": {
+        "name": "Taken today"
+      },
+      "last_taken": {
+        "name": "Last taken"
+      },
+      "current_dose": {
+        "name": "Current dose"
+      },
+      "stock": {
+        "name": "Stock"
+      },
+      "next_dose_any": {
+        "name": "Next dose"
+      },
+      "open_doses": {
+        "name": "Open doses"
+      },
+      "adherence_7d": {
+        "name": "Adherence (7 days)"
+      },
+      "last_sync": {
+        "name": "Last sync"
+      },
+      "stock_units": {
+        "name": "Stock",
+        "unit_of_measurement": "units"
+      },
+      "supply_days": {
+        "name": "Supply"
+      }
+    },
+    "binary_sensor": {
+      "dose_open": {
+        "name": "Dose open"
+      },
+      "stock_low": {
+        "name": "Stock low"
+      },
+      "any_dose_open": {
+        "name": "Dose open"
+      }
+    }
+  }
+}
