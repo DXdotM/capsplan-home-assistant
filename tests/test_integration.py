@@ -88,8 +88,10 @@ async def test_entities(hass: HomeAssistant, setup) -> None:
     assert hass.states.get("binary_sensor.ramipril_dose_open").state == "off"
     next_dose = hass.states.get("sensor.ramipril_next_dose").state
     assert datetime.fromisoformat(next_dose) == datetime(2026, 10, 19, 20, tzinfo=TZ)
-    assert hass.states.get("sensor.ramipril_stock").state == "50.0"
-    assert hass.states.get("sensor.ramipril_stock").attributes["unit_of_measurement"] == "mg"
+    stock = hass.states.get("sensor.ramipril_stock")
+    assert stock.state == "10 × 5 mg"
+    assert stock.attributes["total"] == 50
+    assert "unit_of_measurement" not in stock.attributes
     assert hass.states.get("binary_sensor.ramipril_stock_low").state == "off"
     assert hass.states.get("sensor.capsplan_open_doses").state == "0"
     assert hass.states.get("sensor.capsplan_next_dose").attributes["medication"] == "Ramipril"

@@ -435,6 +435,30 @@ def _fmt(value: float) -> str:
     return f"{value:g}"
 
 
+_FRACTIONS = {0: "", 1: "¼", 2: "½", 3: "¾"}
+
+
+def tablets_label(quarters: int) -> str:
+    """Quarter tablets as people write them: 94, 94½, ½, ¾."""
+    whole, rest = divmod(quarters, 4)
+    if whole == 0 and rest:
+        return _FRACTIONS[rest]
+    return f"{whole}{_FRACTIONS[rest]}"
+
+
+def stock_label(med: Medication) -> str | None:
+    """Stock per strength, largest strength first: "94 × 75 mg, ½ × 50 mg"."""
+    live = [s for s in med.strengths if not s.archived]
+    if not (med.use_strengths and live):
+        return None
+    parts = [
+        f"{tablets_label(s.quarters)} × {_fmt(s.strength)} {med.dose_unit}"
+        for s in sorted(live, key=lambda s: s.strength, reverse=True)
+        if s.quarters > 0
+    ]
+    return ", ".join(parts) if parts else "0"
+
+
 def dose_label(med: Medication, dose: float | None) -> str:
     """"Mestinon 60 mg", or just the name when the dose is unknown."""
     if dose is None or dose <= 0:

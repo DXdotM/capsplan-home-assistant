@@ -36,7 +36,7 @@ Every medication becomes its own device in Home Assistant:
 | `binary_sensor.<medication>_dose_open` | on | A dose is due and neither confirmed nor skipped |
 | `sensor.<medication>_last_taken` | today 07:05 | When the last dose was confirmed |
 | `sensor.<medication>_current_dose` | `8 mg` | Today's dose, follows tapering plans |
-| `sensor.<medication>_stock` | `1200 mg` | Stock in the dose unit; attribute `tablets_by_strength` |
+| `sensor.<medication>_stock` | `94 × 75 mg, ½ × 50 mg` | Tablets per strength; attributes `tablets_by_strength`, `total` (in the dose unit) |
 | `sensor.<medication>_supply` | `29 d` | Days the stock lasts with the planned doses, tapering included (max. 365) |
 | `binary_sensor.<medication>_stock_low` | off | Your low-stock warning from CapsPlan |
 

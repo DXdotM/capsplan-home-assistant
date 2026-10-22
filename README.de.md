@@ -30,7 +30,7 @@ Jedes Medikament wird ein eigenes Gerät in Home Assistant (Entitäts-IDs mit de
 | `binary_sensor.<medikament>_einnahme_offen` | an | Eine Einnahme ist fällig und weder bestätigt noch übersprungen |
 | `sensor.<medikament>_zuletzt_eingenommen` | heute 07:05 | Zeitpunkt der letzten Bestätigung |
 | `sensor.<medikament>_aktuelle_dosis` | `8 mg` | Dosis von heute, folgt Ausschleichplänen |
-| `sensor.<medikament>_vorrat` | `1200 mg` | Vorrat in der Dosiseinheit; Attribut `tablets_by_strength` |
+| `sensor.<medikament>_vorrat` | `94 × 75 mg, ½ × 50 mg` | Tabletten pro Stärke; Attribute `tablets_by_strength`, `total` (in der Dosiseinheit) |
 | `sensor.<medikament>_reichweite` | `29 d` | Wie viele Tage der Vorrat mit den geplanten Einnahmen reicht, Ausschleichen eingerechnet (max. 365) |
 | `binary_sensor.<medikament>_vorrat_niedrig` | aus | Deine Vorratswarnung aus CapsPlan |
 

@@ -88,10 +88,15 @@ MEDICATION_SENSORS: tuple[MedicationSensorDescription, ...] = (
     MedicationSensorDescription(
         key="stock",
         translation_key="stock",
-        state_class=SensorStateClass.MEASUREMENT,
-        value=lambda s: s.stock_amount,
-        unit=lambda s: s.medication.dose_unit,
-        attrs=lambda s: {"tablets_by_strength": s.stock_by_strength},
+        # Tablets per strength as text ("94 × 75 mg, ½ × 50 mg"), like the
+        # app shows it; numbers for automations are in the attributes and
+        # in the supply sensor.
+        value=lambda s: logic.stock_label(s.medication),
+        attrs=lambda s: {
+            "tablets_by_strength": s.stock_by_strength,
+            "total": s.stock_amount,
+            "unit": s.medication.dose_unit,
+        },
         exists=lambda s: s.stock_amount is not None,
     ),
     MedicationSensorDescription(

@@ -244,3 +244,15 @@ def test_supply_days_follow_the_taper():
     assert state.stock_amount == 300
     assert state.supply_days == 10
     assert state.stock_by_strength == {"5 mg": 60}
+
+
+def test_stock_label_per_strength():
+    store = store_with(record(f"medication-{MED}", "medication", medication()))
+    for i, (strength, quarters) in enumerate([(50, 2), (75, 376), (20, 0)]):
+        store.apply([record(f"strength-{i}", "strength", {
+            "_med": MED, "divisibility": 1, "isArchived": False, "lastReminderSentAt": None,
+            "looseQuarters": 0, "packSize": 0, "quarters": quarters, "reminderEnabled": False,
+            "sortOrder": i, "strength": float(strength), "thresholdQuarters": 0})])
+    med = logic.build(store, TZ)[MED]
+    assert logic.stock_label(med) == "94 × 75 mg, ½ × 50 mg"
+    assert logic.tablets_label(3) == "¾" and logic.tablets_label(9) == "2¼" and logic.tablets_label(0) == "0"
