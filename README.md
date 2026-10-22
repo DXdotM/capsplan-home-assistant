@@ -44,8 +44,11 @@ Plus a **CapsPlan** device for everything together:
 
 | Entity | Notes |
 |---|---|
-| `sensor.capsplan_next_dose` | Next dose of any medication; attributes `medication`, `dose`, `unit` |
-| `sensor.capsplan_open_doses` | Number of due, unconfirmed doses; attribute `doses` |
+| `sensor.capsplan_up_next` | **Which** doses come next, e.g. `16:00 · Metformin 500 mg` (all medications due at that time) |
+| `sensor.capsplan_open` | **Which** doses are open, e.g. `Metformin 08:00, Ramipril 12:00` (`–` when none) |
+| `calendar.capsplan_doses` | Every planned dose as a calendar event: ✓ taken, ✗ skipped, ⏰ open |
+| `sensor.capsplan_next_dose` | Time of the next dose; attributes `medications` (all at that time), `medication`, `dose`, `unit` |
+| `sensor.capsplan_open_doses` | Number of due, unconfirmed doses (for automations); attribute `doses` |
 | `binary_sensor.capsplan_dose_open` | On while any dose is open |
 | `sensor.capsplan_adherence_7_days` | Share of planned doses of the last 7 days that were taken |
 | `sensor.capsplan_last_sync` | Diagnostic: last successful sync with iCloud |
@@ -149,17 +152,26 @@ automation:
 
 More examples: [`examples/`](examples/).
 
-### Dashboard card
+### Dashboard cards
 
 ```yaml
 type: entities
 title: Medications
 entities:
-  - entity: sensor.capsplan_next_dose
-  - entity: sensor.capsplan_open_doses
+  - entity: sensor.capsplan_up_next
+  - entity: sensor.capsplan_open
   - entity: sensor.prednisolon_current_dose
   - entity: sensor.metformin_supply
   - entity: sensor.capsplan_adherence_7_days
+```
+
+The day at a glance — every dose with ✓ / ✗ / ⏰:
+
+```yaml
+type: calendar
+entities:
+  - calendar.capsplan_doses
+initial_view: listWeek
 ```
 
 ## How it works

@@ -38,8 +38,11 @@ Dazu ein Gerät **CapsPlan** für alles zusammen:
 
 | Entität | Hinweise |
 |---|---|
-| `sensor.capsplan_nachste_einnahme` | Nächste Einnahme über alle Medikamente; Attribute `medication`, `dose`, `unit` |
-| `sensor.capsplan_offene_einnahmen` | Anzahl fälliger, unbestätigter Einnahmen; Attribut `doses` |
+| `sensor.capsplan_als_nachstes` | **Welche** Einnahmen als Nächstes kommen, z. B. `16:00 · Metformin 500 mg` (alle Medikamente zu dieser Zeit) |
+| `sensor.capsplan_offen` | **Welche** Einnahmen offen sind, z. B. `Metformin 08:00, Ramipril 12:00` (`–`, wenn keine) |
+| `calendar.capsplan_einnahmen` | Alle geplanten Einnahmen als Kalendertermine: ✓ genommen, ✗ übersprungen, ⏰ offen |
+| `sensor.capsplan_nachste_einnahme` | Zeitpunkt der nächsten Einnahme; Attribute `medications` (alle zu dieser Zeit), `medication`, `dose`, `unit` |
+| `sensor.capsplan_offene_einnahmen` | Anzahl fälliger, unbestätigter Einnahmen (für Automationen); Attribut `doses` |
 | `binary_sensor.capsplan_einnahme_offen` | An, solange irgendeine Einnahme offen ist |
 | `sensor.capsplan_einnahmetreue_7_tage` | Anteil der geplanten Einnahmen der letzten 7 Tage, die genommen wurden |
 | `sensor.capsplan_letzte_synchronisation` | Diagnose: letzter erfolgreicher Abgleich mit iCloud |
@@ -139,6 +142,26 @@ automation:
       - action: todo.add_item
         target: { entity_id: todo.einkaufsliste }
         data: { item: "Rezept Metformin" }
+```
+
+### Dashboard
+
+```yaml
+type: entities
+title: Medikamente
+entities:
+  - entity: sensor.capsplan_als_nachstes
+  - entity: sensor.capsplan_offen
+  - entity: sensor.capsplan_einnahmetreue_7_tage
+```
+
+Der Tag auf einen Blick – jede Einnahme mit ✓ / ✗ / ⏰:
+
+```yaml
+type: calendar
+entities:
+  - calendar.capsplan_einnahmen
+initial_view: listWeek
 ```
 
 Weitere Beispiele (Durchsage vor der Einnahme, Vorratswarnung, Ausschleich-Dosis ändert sich): [`examples/automations.yaml`](examples/automations.yaml).

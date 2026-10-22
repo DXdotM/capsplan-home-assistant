@@ -30,6 +30,9 @@ class CapsPlanData:
     medications: dict[str, logic.MedicationState]
     open_doses: int
     next_dose: tuple[logic.MedicationState, logic.PlannedDose] | None
+    # All doses due at the next dose time (several medications at 08:00).
+    next_group: list[tuple[logic.MedicationState, logic.PlannedDose]]
+    open_list: list[tuple[logic.MedicationState, logic.PlannedDose]]
     adherence_7d: float | None
     last_sync: datetime | None
 
@@ -87,14 +90,23 @@ class CapsPlanCoordinator(DataUpdateCoordinator[CapsPlanData]):
         now = dt_util.now()
         meds = logic.build(self._sync, tz)
         states = {sid: logic.medication_state(m, now) for sid, m in meds.items()}
-        upcoming = [(s, s.next_dose) for s in states.values() if s.next_dose is not None]
-        next_dose = min(upcoming, key=lambda x: x[1].time) if upcoming else None
+        upcoming = sorted(
+            ((s, s.next_dose) for s in states.values() if s.next_dose is not None),
+            key=lambda x: (x[1].time, x[0].medication.name.lower()),
+        )
+        next_group = [x for x in upcoming if x[1].time == upcoming[0][1].time] if upcoming else []
+        open_list = sorted(
+            ((s, d) for s in states.values() for d in s.today if d.status == "open"),
+            key=lambda x: (x[1].time, x[0].medication.name.lower()),
+        )
         active = [m for m in meds.values() if m.active and not m.on_demand]
         return CapsPlanData(
             now=now,
             medications=states,
-            open_doses=sum(s.open_today for s in states.values()),
-            next_dose=next_dose,
+            open_doses=len(open_list),
+            next_dose=next_group[0] if next_group else None,
+            next_group=next_group,
+            open_list=open_list,
             adherence_7d=logic.adherence(active, now),
             last_sync=self._last_sync,
         )

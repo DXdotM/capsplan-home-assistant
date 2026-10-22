@@ -67,6 +67,12 @@
       },
       "supply_days": {
         "name": "Supply"
+      },
+      "next_doses_text": {
+        "name": "Up next"
+      },
+      "open_doses_text": {
+        "name": "Open"
       }
     },
     "binary_sensor": {
@@ -78,6 +84,11 @@
       },
       "any_dose_open": {
         "name": "Dose open"
+      }
+    },
+    "calendar": {
+      "doses": {
+        "name": "Doses"
       }
     }
   }

@@ -127,16 +127,45 @@ def _next_attrs(data: CapsPlanData) -> dict[str, Any]:
         "medication": state.medication.name,
         "dose": dose.dose,
         "unit": state.medication.dose_unit,
+        "medications": [
+            {"medication": s.medication.name, "dose": d.dose, "unit": s.medication.dose_unit}
+            for s, d in data.next_group
+        ],
     }
+
+
+def _when(data: CapsPlanData, time: datetime) -> str:
+    """"16:00" today, "23.10. 05:30" on another day."""
+    if time.date() == data.now.date():
+        return time.strftime("%H:%M")
+    return time.strftime("%d.%m. %H:%M")
+
+
+def _next_text(data: CapsPlanData) -> str:
+    if not data.next_group:
+        return "–"
+    labels = ", ".join(logic.dose_label(s.medication, d.dose) for s, d in data.next_group)
+    return _clip(f"{_when(data, data.next_group[0][1].time)} · {labels}")
+
+
+def _open_text(data: CapsPlanData) -> str:
+    if not data.open_list:
+        return "–"
+    return _clip(
+        ", ".join(f"{s.medication.name} {d.time.strftime('%H:%M')}" for s, d in data.open_list)
+    )
+
+
+def _clip(text: str) -> str:
+    # States are limited to 255 characters.
+    return text if len(text) <= 255 else text[:254] + "…"
 
 
 def _open_attrs(data: CapsPlanData) -> dict[str, Any]:
     return {
         "doses": [
             {"medication": s.medication.name, "time": d.time.isoformat(), "dose": d.dose}
-            for s in data.medications.values()
-            for d in s.today
-            if d.status == "open"
+            for s, d in data.open_list
         ]
     }
 
@@ -148,6 +177,16 @@ ACCOUNT_SENSORS: tuple[AccountSensorDescription, ...] = (
         device_class=SensorDeviceClass.TIMESTAMP,
         value=lambda d: d.next_dose[1].time if d.next_dose else None,
         attrs=_next_attrs,
+    ),
+    AccountSensorDescription(
+        key="next_doses_text",
+        translation_key="next_doses_text",
+        value=_next_text,
+    ),
+    AccountSensorDescription(
+        key="open_doses_text",
+        translation_key="open_doses_text",
+        value=_open_text,
     ),
     AccountSensorDescription(
         key="open_doses",

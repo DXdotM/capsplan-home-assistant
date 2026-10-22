@@ -169,3 +169,38 @@ async def test_unload_and_remove(hass: HomeAssistant, setup) -> None:
     assert await hass.config_entries.async_unload(entry.entry_id)
     assert entry.state is ConfigEntryState.NOT_LOADED
     assert await hass.config_entries.async_remove(entry.entry_id)
+
+
+async def test_which_doses_are_open_and_next(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory
+) -> None:
+    await hass.config.async_set_time_zone("Europe/Berlin")
+    freezer.move_to(datetime(2026, 10, 19, 13, tzinfo=TZ))
+    entry = MockConfigEntry(domain=DOMAIN, unique_id="_user",
+                            data={CONF_WEB_AUTH_TOKEN: "t", CONF_USER_RECORD: "_user"})
+    entry.add_to_hass(hass)
+    records = [
+        record(f"medication-{MED}", "medication", medication(scheduledTimes=["12:00", "20:00"])),
+        record("medication-b", "medication",
+               medication(name="Metformin", doseAmount=500.0, scheduledTimes=["08:00", "20:00"])),
+    ]
+    with patch(f"{CLIENT}.zone_changes", return_value=(records, "s")):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert hass.states.get("sensor.capsplan_open").state == "Metformin 08:00, Ramipril 12:00"
+    assert hass.states.get("sensor.capsplan_up_next").state == "20:00 · Metformin 500 mg, Ramipril 5 mg"
+    meds = hass.states.get("sensor.capsplan_next_dose").attributes["medications"]
+    assert [m["medication"] for m in meds] == ["Metformin", "Ramipril"]
+
+    calendar = hass.states.get("calendar.capsplan_doses")
+    assert calendar.attributes["message"] == "⏰ Metformin 500 mg"  # longest open first
+    result = await hass.services.async_call(
+        "calendar", "get_events",
+        {"entity_id": "calendar.capsplan_doses",
+         "start_date_time": "2026-10-19T00:00:00+02:00",
+         "end_date_time": "2026-10-20T00:00:00+02:00"},
+        blocking=True, return_response=True,
+    )
+    summaries = [e["summary"] for e in result["calendar.capsplan_doses"]["events"]]
+    assert summaries == ["⏰ Metformin 500 mg", "⏰ Ramipril 5 mg", "Metformin 500 mg", "Ramipril 5 mg"]

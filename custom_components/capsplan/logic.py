@@ -435,6 +435,13 @@ def _fmt(value: float) -> str:
     return f"{value:g}"
 
 
+def dose_label(med: Medication, dose: float | None) -> str:
+    """"Mestinon 60 mg", or just the name when the dose is unknown."""
+    if dose is None or dose <= 0:
+        return med.name
+    return f"{med.name} {_fmt(dose)} {med.dose_unit}"
+
+
 def medication_state(med: Medication, now: datetime, horizon_days: int = 21) -> MedicationState:
     today = planned_doses(med, now.date(), now)
     next_dose = next((d for d in today if d.status == "upcoming"), None)

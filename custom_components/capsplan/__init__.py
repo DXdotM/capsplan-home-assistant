@@ -11,7 +11,7 @@ from .api import CapsPlanClient
 from .const import API_TOKEN, CONF_WEB_AUTH_TOKEN, RECOMPUTE_INTERVAL
 from .coordinator import CapsPlanConfigEntry, CapsPlanCoordinator
 
-PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.CALENDAR, Platform.SENSOR]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: CapsPlanConfigEntry) -> bool:
