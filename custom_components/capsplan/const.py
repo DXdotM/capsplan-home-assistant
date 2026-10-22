@@ -19,6 +19,8 @@ SIGN_IN_URL: Final = "https://dxdotm.github.io/capsplan-home-assistant/"
 
 CONF_WEB_AUTH_TOKEN: Final = "web_auth_token"
 CONF_USER_RECORD: Final = "user_record_name"
+# Whose CapsPlan this is ("Anna"); empty for a single person.
+CONF_PERSON: Final = "person"
 
 UPDATE_INTERVAL: Final = timedelta(minutes=5)
 RECOMPUTE_INTERVAL: Final = timedelta(minutes=1)

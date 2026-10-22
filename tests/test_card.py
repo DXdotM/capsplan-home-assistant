@@ -58,3 +58,23 @@ async def test_overview_card_de(hass, freezer):
     text = _render(hass, "overview-card.de.yaml")
     assert "- **Metformin** 500 mg · geplant 05:30 · seit 8 Std. 10 Min." in text
     assert "- **16:00** Metformin 500 mg\n- **19:00** Ramipril 5 mg" in text
+
+
+async def test_overview_card_two_people(hass, freezer):
+    hass.config.language = "en"
+    await hass.config.async_set_time_zone("Europe/Berlin")
+    freezer.move_to(datetime(2026, 10, 19, 13, 40, tzinfo=TZ))
+    for person, med, times in (("Anna", "Metformin", ["12:00", "18:00"]), ("Ben", "Ramipril", ["08:00", "16:00"])):
+        entry = MockConfigEntry(domain=DOMAIN, unique_id=person, title=f"CapsPlan {person}",
+                                data={CONF_WEB_AUTH_TOKEN: "t", CONF_USER_RECORD: person},
+                                options={"person": person})
+        entry.add_to_hass(hass)
+        recs = [record(f"medication-{person}", "medication",
+                       medication(name=med, doseAmount=5.0, scheduledTimes=times))]
+        with patch("custom_components.capsplan.api.CapsPlanClient.zone_changes", return_value=(recs, "s")):
+            assert await hass.config_entries.async_setup(entry.entry_id)
+            await hass.async_block_till_done()
+    text = _render(hass, "overview-card.en.yaml")
+    assert ("- **Ramipril** 5 mg (Ben) · planned 08:00 · 5 h 40 min overdue\n"
+            "- **Metformin** 5 mg (Anna) · planned 12:00 · 1 h 40 min overdue") in text
+    assert "- **16:00** Ramipril 5 mg (Ben)\n- **18:00** Metformin 5 mg (Anna)" in text

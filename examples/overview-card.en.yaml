@@ -1,15 +1,24 @@
-# Overdue doses on top, below what is still planned for today.
+# Overdue doses on top, below what is still planned for today – for every
+# connected person (with several, the name follows the medication).
 # Dashboard → Edit → Add card → Manual, paste this.
+# Only one person: extend the condition in the second line
+#   if state_attr(e, 'list') == 'remaining_today'
+# with: and state_attr(e, 'person') == 'Anna'
 type: markdown
 title: Medications today
 content: |
-  {%- set doses = state_attr('sensor.capsplan_still_to_take_today', 'doses') or [] %}
+  {%- set ns = namespace(doses=[], lists=0) %}
+  {%- for e in integration_entities('capsplan') if state_attr(e, 'list') == 'remaining_today' %}
+  {%- set ns.lists = ns.lists + 1 %}
+  {%- set ns.doses = ns.doses + (state_attr(e, 'doses') or []) %}
+  {%- endfor %}
+  {%- set doses = ns.doses | sort(attribute='time') %}
   {%- set overdue = doses | selectattr('status', 'eq', 'open') | list %}
   {%- set planned = doses | selectattr('status', 'eq', 'upcoming') | list %}
   ### ⏰ Overdue
   {%- for d in overdue %}
   {%- set m = ((now() - as_datetime(d.time)).total_seconds() // 60) | int %}
-  - **{{ d.medication }}**{% if d.dose %} {{ '%g' | format(d.dose) }} {{ d.unit }}{% endif %} · planned {{ as_datetime(d.time).strftime('%H:%M') }} · {% if m >= 60 %}{{ m // 60 }} h {% endif %}{{ m % 60 }} min overdue
+  - **{{ d.medication }}**{% if d.dose %} {{ '%g' | format(d.dose) }} {{ d.unit }}{% endif %}{% if ns.lists > 1 and d.person %} ({{ d.person }}){% endif %} · planned {{ as_datetime(d.time).strftime('%H:%M') }} · {% if m >= 60 %}{{ m // 60 }} h {% endif %}{{ m % 60 }} min overdue
   {%- else %}
   ✓ Nothing overdue
   {%- endfor %}
@@ -18,7 +27,7 @@ content: |
 
   ### 🕒 Still planned today
   {%- for d in planned %}
-  - **{{ as_datetime(d.time).strftime('%H:%M') }}** {{ d.medication }}{% if d.dose %} {{ '%g' | format(d.dose) }} {{ d.unit }}{% endif %}
+  - **{{ as_datetime(d.time).strftime('%H:%M') }}** {{ d.medication }}{% if d.dose %} {{ '%g' | format(d.dose) }} {{ d.unit }}{% endif %}{% if ns.lists > 1 and d.person %} ({{ d.person }}){% endif %}
   {%- else %}
   ✓ Nothing else planned today
   {%- endfor %}

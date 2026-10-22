@@ -5,10 +5,12 @@
         "title": "Sign in to iCloud",
         "description": "CapsPlan reads your medications from the iCloud account that CapsPlan syncs with (CapsPlan → Settings → Backups → iCloud sync).\n\n1. Open [the CapsPlan sign-in page]({sign_in_url}) and sign in with your Apple ID.\n2. Copy the token the page shows and paste it here.\n\nThe token only gives access to CapsPlan's own data. It stays in Home Assistant.",
         "data": {
-          "web_auth_token": "Sign-in token"
+          "web_auth_token": "Sign-in token",
+          "person": "Name (optional)"
         },
         "data_description": {
-          "web_auth_token": "Shown on the CapsPlan sign-in page after you signed in."
+          "web_auth_token": "Shown on the CapsPlan sign-in page after you signed in.",
+          "person": "Whose CapsPlan is this? Only needed when several people connect their CapsPlan, e.g. \"Anna\". Their medications are then shown as \"Metformin (Anna)\". Sign in with each Apple ID in a private browser window."
         }
       },
       "reauth_confirm": {
@@ -104,6 +106,20 @@
     "calendar": {
       "doses": {
         "name": "Doses"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "CapsPlan",
+        "description": "Change whose CapsPlan this is. Existing entity ids stay the same.",
+        "data": {
+          "person": "Name (optional)"
+        },
+        "data_description": {
+          "person": "Whose CapsPlan is this? Only needed when several people connect their CapsPlan, e.g. \"Anna\". Their medications are then shown as \"Metformin (Anna)\". Sign in with each Apple ID in a private browser window."
+        }
       }
     }
   }

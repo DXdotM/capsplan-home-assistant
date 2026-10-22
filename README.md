@@ -95,6 +95,18 @@ That's it — your medications appear as devices within a few seconds.
 
 **Why a token?** Apple only lets apps read your iCloud data after you signed in on Apple's own page. The sign-in page is a small static page in this repository (see [`docs/index.html`](docs/index.html)): it talks to Apple only and shows the token in your browser; nothing is sent anywhere else. The token grants access to CapsPlan's data in your iCloud, not to your photos, mail or anything else.
 
+## Several people
+
+Every person connects their own CapsPlan (their own Apple ID) as a separate entry:
+
+1. Settings → Devices & services → **Add integration** → **CapsPlan** — once per person.
+2. On the sign-in page, sign in with that person's Apple ID — best in a **private browser window**, otherwise Apple may sign in the previous Apple ID again automatically.
+3. Enter a **name** in the setup, e.g. `Anna`.
+
+With a name, everything tells the people apart: the account device becomes *CapsPlan Anna* (`sensor.capsplan_anna_still_to_take_today`), medications become *Metformin (Anna)* (`sensor.metformin_anna_next_dose`). The [overview card](#overview-card-overdue-then-the-rest-of-today) collects all people automatically and adds the name to each dose.
+
+The name can be changed later: Devices & services → CapsPlan → the entry → ⚙️ **Configure**. Existing entity ids stay the same.
+
 ## Examples
 
 ### Turn a light red while a dose is open
@@ -173,13 +185,18 @@ Dashboard → Edit → Add card → *Manual*, paste ([`examples/overview-card.en
 type: markdown
 title: Medications today
 content: |
-  {%- set doses = state_attr('sensor.capsplan_still_to_take_today', 'doses') or [] %}
+  {%- set ns = namespace(doses=[], lists=0) %}
+  {%- for e in integration_entities('capsplan') if state_attr(e, 'list') == 'remaining_today' %}
+  {%- set ns.lists = ns.lists + 1 %}
+  {%- set ns.doses = ns.doses + (state_attr(e, 'doses') or []) %}
+  {%- endfor %}
+  {%- set doses = ns.doses | sort(attribute='time') %}
   {%- set overdue = doses | selectattr('status', 'eq', 'open') | list %}
   {%- set planned = doses | selectattr('status', 'eq', 'upcoming') | list %}
   ### ⏰ Overdue
   {%- for d in overdue %}
   {%- set m = ((now() - as_datetime(d.time)).total_seconds() // 60) | int %}
-  - **{{ d.medication }}**{% if d.dose %} {{ '%g' | format(d.dose) }} {{ d.unit }}{% endif %} · planned {{ as_datetime(d.time).strftime('%H:%M') }} · {% if m >= 60 %}{{ m // 60 }} h {% endif %}{{ m % 60 }} min overdue
+  - **{{ d.medication }}**{% if d.dose %} {{ '%g' | format(d.dose) }} {{ d.unit }}{% endif %}{% if ns.lists > 1 and d.person %} ({{ d.person }}){% endif %} · planned {{ as_datetime(d.time).strftime('%H:%M') }} · {% if m >= 60 %}{{ m // 60 }} h {% endif %}{{ m % 60 }} min overdue
   {%- else %}
   ✓ Nothing overdue
   {%- endfor %}
@@ -188,7 +205,7 @@ content: |
 
   ### 🕒 Still planned today
   {%- for d in planned %}
-  - **{{ as_datetime(d.time).strftime('%H:%M') }}** {{ d.medication }}{% if d.dose %} {{ '%g' | format(d.dose) }} {{ d.unit }}{% endif %}
+  - **{{ as_datetime(d.time).strftime('%H:%M') }}** {{ d.medication }}{% if d.dose %} {{ '%g' | format(d.dose) }} {{ d.unit }}{% endif %}{% if ns.lists > 1 and d.person %} ({{ d.person }}){% endif %}
   {%- else %}
   ✓ Nothing else planned today
   {%- endfor %}

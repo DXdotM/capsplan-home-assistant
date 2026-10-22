@@ -6,8 +6,13 @@ from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import logic
-from .const import APP_STORE_URL, DOMAIN
+from .const import APP_STORE_URL, CONF_PERSON, DOMAIN
 from .coordinator import CapsPlanCoordinator
+
+
+def person_of(coordinator: CapsPlanCoordinator) -> str:
+    """Whose CapsPlan this is; empty for a single person."""
+    return (coordinator.config_entry.options.get(CONF_PERSON) or "").strip()
 
 
 class CapsPlanEntity(CoordinatorEntity[CapsPlanCoordinator]):
@@ -22,7 +27,7 @@ class CapsPlanEntity(CoordinatorEntity[CapsPlanCoordinator]):
         self._attr_unique_id = f"{entry_id}_{key}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry_id)},
-            name="CapsPlan",
+            name=f"CapsPlan {person_of(coordinator)}".strip(),
             manufacturer="DXdotM Coding",
             model="iCloud sync",
             entry_type=DeviceEntryType.SERVICE,
@@ -42,9 +47,10 @@ class CapsPlanMedicationEntity(CoordinatorEntity[CapsPlanCoordinator]):
         self._attr_translation_key = key
         self._attr_unique_id = f"{entry_id}_{sid}_{key}"
         med = self.state_data.medication
+        person = person_of(coordinator)
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, f"{entry_id}_{sid}")},
-            name=med.name,
+            name=f"{med.name} ({person})" if person else med.name,
             manufacturer="CapsPlan",
             model=med.type.capitalize(),
             entry_type=DeviceEntryType.SERVICE,

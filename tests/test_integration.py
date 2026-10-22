@@ -64,10 +64,12 @@ async def test_user_flow(hass: HomeAssistant) -> None:
         patch("custom_components.capsplan.async_setup_entry", return_value=True),
     ):
         result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {CONF_WEB_AUTH_TOKEN: " pasted-token "}
+            result["flow_id"], {CONF_WEB_AUTH_TOKEN: " pasted-token ", "person": " Anna "}
         )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"] == {CONF_WEB_AUTH_TOKEN: "pasted-token", CONF_USER_RECORD: "_user"}
+    assert result["options"] == {"person": "Anna"}
+    assert result["title"] == "CapsPlan Anna"
 
 
 async def test_user_flow_invalid_token(hass: HomeAssistant) -> None:
@@ -211,3 +213,43 @@ async def test_which_doses_are_open_and_next(
     )
     summaries = [e["summary"] for e in result["calendar.capsplan_doses"]["events"]]
     assert summaries == ["⏰ Metformin 500 mg", "⏰ Ramipril 5 mg", "Metformin 500 mg", "Ramipril 5 mg"]
+
+
+async def test_two_people(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    await hass.config.async_set_time_zone("Europe/Berlin")
+    freezer.move_to(datetime(2026, 10, 19, 13, tzinfo=TZ))
+    recs = [record(f"medication-{MED}", "medication", medication(name="Metformin", scheduledTimes=["20:00"]))]
+    entries = []
+    for person in ("Anna", "Ben"):
+        entry = MockConfigEntry(domain=DOMAIN, unique_id=person, title=f"CapsPlan {person}",
+                                data={CONF_WEB_AUTH_TOKEN: "t", CONF_USER_RECORD: person},
+                                options={"person": person})
+        entry.add_to_hass(hass)
+        entries.append(entry)
+    with patch(f"{CLIENT}.zone_changes", return_value=(recs, "s")):
+        # Setting up the integration loads every entry of it.
+        assert await hass.config_entries.async_setup(entries[0].entry_id)
+        await hass.async_block_till_done()
+    assert all(e.state is ConfigEntryState.LOADED for e in entries)
+    # Same medication for both, told apart by the person.
+    assert hass.states.get("sensor.metformin_anna_next_dose") is not None
+    assert hass.states.get("sensor.metformin_ben_next_dose") is not None
+    remaining = hass.states.get("sensor.capsplan_ben_still_to_take_today")
+    assert remaining.attributes["person"] == "Ben"
+    assert remaining.attributes["doses"][0]["person"] == "Ben"
+
+
+async def test_rename_person(hass: HomeAssistant, setup) -> None:
+    entry, _ = setup
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    with patch(f"{CLIENT}.zone_changes", return_value=(sample_records(), "s")):
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {"person": "Dominique"}
+        )
+        await hass.async_block_till_done()
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.title == "CapsPlan Dominique"
+    assert entry.options == {"person": "Dominique"}
+    # Existing entity ids stay; the names follow.
+    state = hass.states.get("sensor.ramipril_next_dose")
+    assert state.attributes["friendly_name"] == "Ramipril (Dominique) Next dose"

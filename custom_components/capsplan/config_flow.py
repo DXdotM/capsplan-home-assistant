@@ -6,7 +6,13 @@ from collections.abc import Mapping
 from typing import Any
 
 import voluptuous as vol
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlowWithReload,
+)
+from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
     TextSelector,
@@ -15,7 +21,14 @@ from homeassistant.helpers.selector import (
 )
 
 from .api import CapsPlanAuthError, CapsPlanClient, CapsPlanError
-from .const import API_TOKEN, CONF_USER_RECORD, CONF_WEB_AUTH_TOKEN, DOMAIN, SIGN_IN_URL
+from .const import (
+    API_TOKEN,
+    CONF_PERSON,
+    CONF_USER_RECORD,
+    CONF_WEB_AUTH_TOKEN,
+    DOMAIN,
+    SIGN_IN_URL,
+)
 
 TOKEN_SCHEMA = vol.Schema(
     {
@@ -24,12 +37,22 @@ TOKEN_SCHEMA = vol.Schema(
         )
     }
 )
+USER_SCHEMA = TOKEN_SCHEMA.extend({vol.Optional(CONF_PERSON, default=""): TextSelector()})
+
+
+def entry_title(person: str) -> str:
+    return f"CapsPlan {person}" if person else "CapsPlan"
 
 
 class CapsPlanConfigFlow(ConfigFlow, domain=DOMAIN):
     """Signs in to iCloud via the CapsPlan sign-in page."""
 
     VERSION = 1
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: ConfigEntry) -> CapsPlanOptionsFlow:
+        return CapsPlanOptionsFlow()
 
     async def _validate(self, token: str) -> tuple[dict[str, str], dict[str, Any] | None]:
         """Checks the pasted token; returns errors or the entry data."""
@@ -58,10 +81,13 @@ class CapsPlanConfigFlow(ConfigFlow, domain=DOMAIN):
             if data is not None:
                 await self.async_set_unique_id(data[CONF_USER_RECORD])
                 self._abort_if_unique_id_configured()
-                return self.async_create_entry(title="CapsPlan", data=data)
+                person = user_input.get(CONF_PERSON, "").strip()
+                return self.async_create_entry(
+                    title=entry_title(person), data=data, options={CONF_PERSON: person}
+                )
         return self.async_show_form(
             step_id="user",
-            data_schema=TOKEN_SCHEMA,
+            data_schema=USER_SCHEMA,
             errors=errors,
             description_placeholders={"sign_in_url": SIGN_IN_URL},
         )
@@ -85,4 +111,23 @@ class CapsPlanConfigFlow(ConfigFlow, domain=DOMAIN):
             data_schema=TOKEN_SCHEMA,
             errors=errors,
             description_placeholders={"sign_in_url": SIGN_IN_URL},
+        )
+
+
+class CapsPlanOptionsFlow(OptionsFlowWithReload):
+    """Changes whose CapsPlan this is."""
+
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        if user_input is not None:
+            person = user_input.get(CONF_PERSON, "").strip()
+            self.hass.config_entries.async_update_entry(
+                self.config_entry, title=entry_title(person)
+            )
+            return self.async_create_entry(data={CONF_PERSON: person})
+        return self.async_show_form(
+            step_id="init",
+            data_schema=self.add_suggested_values_to_schema(
+                vol.Schema({vol.Optional(CONF_PERSON, default=""): TextSelector()}),
+                self.config_entry.options,
+            ),
         )

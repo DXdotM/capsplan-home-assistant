@@ -19,7 +19,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import logic
 from .coordinator import CapsPlanConfigEntry, CapsPlanCoordinator, CapsPlanData
-from .entity import CapsPlanEntity, CapsPlanMedicationEntity
+from .entity import CapsPlanEntity, CapsPlanMedicationEntity, person_of
 
 PARALLEL_UPDATES = 0
 
@@ -122,6 +122,8 @@ MEDICATION_SENSORS: tuple[MedicationSensorDescription, ...] = (
 class AccountSensorDescription(SensorEntityDescription):
     value: Callable[[CapsPlanData], Any]
     attrs: Callable[[CapsPlanData], dict[str, Any]] | None = None
+    # (data, person) → attributes; for the lists that name the person.
+    person_attrs: Callable[[CapsPlanData, str], dict[str, Any]] | None = None
 
 
 def _next_attrs(data: CapsPlanData) -> dict[str, Any]:
@@ -174,11 +176,17 @@ def _remaining_text(data: CapsPlanData) -> str:
     return _dose_items(data.remaining_today, mark_open=True)
 
 
-def _list_attrs(doses: list[tuple[logic.MedicationState, logic.PlannedDose]]) -> dict[str, Any]:
+def _list_attrs(
+    doses: list[tuple[logic.MedicationState, logic.PlannedDose]], kind: str, person: str
+) -> dict[str, Any]:
     return {
+        # Lets dashboard templates find these lists for every person.
+        "list": kind,
+        "person": person,
         "count": len(doses),
         "doses": [
             {
+                "person": person,
                 "medication": s.medication.name,
                 "time": d.time.isoformat(),
                 "dose": d.dose,
@@ -221,13 +229,13 @@ ACCOUNT_SENSORS: tuple[AccountSensorDescription, ...] = (
         key="open_doses_text",
         translation_key="open_doses_text",
         value=_open_text,
-        attrs=lambda d: _list_attrs(d.open_list),
+        person_attrs=lambda d, p: _list_attrs(d.open_list, "open", p),
     ),
     AccountSensorDescription(
         key="remaining_today",
         translation_key="remaining_today",
         value=_remaining_text,
-        attrs=lambda d: _list_attrs(d.remaining_today),
+        person_attrs=lambda d, p: _list_attrs(d.remaining_today, "remaining_today", p),
     ),
     AccountSensorDescription(
         key="open_doses",
@@ -290,9 +298,12 @@ class AccountSensor(CapsPlanEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
-        if self.entity_description.attrs is None:
+        desc = self.entity_description
+        if desc.person_attrs is not None:
+            return desc.person_attrs(self.coordinator.data, person_of(self.coordinator))
+        if desc.attrs is None:
             return None
-        return self.entity_description.attrs(self.coordinator.data)
+        return desc.attrs(self.coordinator.data)
 
 
 class MedicationSensor(CapsPlanMedicationEntity, SensorEntity):
