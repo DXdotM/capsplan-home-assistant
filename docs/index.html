@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CapsPlan for Home Assistant – Sign in</title>
+<meta name="description" content="Sign in with your Apple ID to connect CapsPlan to Home Assistant.">
+<link rel="icon" href="icon.png">
+<style>
+  :root {
+    --bg: #f1f4ed; --card: #ffffff; --ink: #1e2926; --muted: #5d6b67;
+    --brand: #2f6f64; --brand-ink: #ffffff; --line: #d9e1db; --warn: #8a5a00; --warn-bg: #fff6e0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141a19; --card: #1d2523; --ink: #e8efec; --muted: #a2b1ac;
+      --brand: #5fb3a3; --brand-ink: #0d1514; --line: #2c3633; --warn: #f2c46b; --warn-bg: #2b2414;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 560px; margin: 0 auto; padding: 32px 16px 48px; }
+  header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+  header img { width: 56px; height: 56px; border-radius: 13px; }
+  h1 { font-size: 22px; margin: 0; }
+  header p { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+  ol { padding-left: 20px; margin: 0; }
+  li { margin-bottom: 8px; }
+  button { font: inherit; font-weight: 600; border: 0; border-radius: 12px; padding: 13px 18px;
+           background: var(--brand); color: var(--brand-ink); cursor: pointer; width: 100%; }
+  button:disabled { opacity: .55; cursor: default; }
+  button.secondary { background: transparent; color: var(--brand); border: 1.5px solid var(--brand); }
+  textarea { width: 100%; height: 120px; font: 13px/1.4 ui-monospace, Menlo, monospace; padding: 10px;
+             border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+             resize: vertical; word-break: break-all; margin: 10px 0; }
+  .note { background: var(--warn-bg); color: var(--warn); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+  .muted { color: var(--muted); font-size: 14px; }
+  #result { display: none; }
+  a { color: var(--brand); }
+  footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 24px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="icon.png" alt="">
+    <div>
+      <h1 data-t="title">CapsPlan for Home Assistant</h1>
+      <p data-t="subtitle">Sign in to connect your medications</p>
+    </div>
+  </header>
+
+  <section class="card">
+    <ol>
+      <li data-t="step1">Click “Sign in with Apple ID” and sign in with the Apple ID that CapsPlan syncs with.</li>
+      <li data-t="step2">Tick “Keep me signed in”, otherwise the sign-in only lasts 30 minutes.</li>
+      <li data-t="step3">Copy the token shown below and paste it into the CapsPlan setup in Home Assistant right away.</li>
+    </ol>
+  </section>
+
+  <section class="card">
+    <button id="signin" disabled data-t="loading">Loading …</button>
+    <p id="error" class="note" style="display:none; margin-top:12px"></p>
+  </section>
+
+  <section class="card" id="result">
+    <strong data-t="tokenTitle">Your sign-in token</strong>
+    <textarea id="token" readonly></textarea>
+    <button id="copy" class="secondary" data-t="copy">Copy token</button>
+    <p class="note" style="margin-top:12px" data-t="single">Use the token right away and only once. Do not reload this page afterwards; if the setup says the token is invalid, sign in again here.</p>
+  </section>
+
+  <section class="card muted">
+    <p data-t="privacy">This page only talks to Apple. The token is shown here in your browser and is not sent anywhere else. It grants access to CapsPlan's data in your iCloud only, never to other iCloud data.</p>
+    <p data-t="adp">Accounts with Advanced Data Protection turned on cannot sign in here (an Apple restriction for apps outside of Apple's own).</p>
+    <p><a href="https://github.com/DXdotM/capsplan-home-assistant" data-t="docs">Documentation</a> · <a href="https://apps.apple.com/app/id6779642344">CapsPlan on the App Store</a></p>
+  </section>
+
+  <footer>CapsPlan · DXdotM Coding</footer>
+</main>
+
+<script>
+  const CONTAINER = "iCloud.com.dxdotm-coding.capsplan";
+  const API_TOKEN = "4de0d60a392fc8c2393c611db2606dc53af5d51ce008b214434d423127380ffa";
+  const URL_CURRENT = `https://api.apple-cloudkit.com/database/1/${CONTAINER}/production/private/users/current?ckAPIToken=${API_TOKEN}`;
+
+  const DE = {
+    title: "CapsPlan für Home Assistant",
+    subtitle: "Anmelden, um deine Medikamente zu verbinden",
+    step1: "Klicke auf „Mit Apple-ID anmelden“ und melde dich mit der Apple-ID an, mit der CapsPlan synchronisiert.",
+    step2: "Setze den Haken bei „Angemeldet bleiben“ – sonst gilt die Anmeldung nur 30 Minuten.",
+    step3: "Kopiere das angezeigte Token und füge es gleich danach in die CapsPlan-Einrichtung in Home Assistant ein.",
+    loading: "Wird geladen …",
+    signin: "Mit Apple-ID anmelden",
+    tokenTitle: "Dein Anmelde-Token",
+    copy: "Token kopieren",
+    copied: "Kopiert ✓",
+    single: "Verwende das Token gleich und nur einmal. Lade diese Seite danach nicht neu; meldet die Einrichtung ein ungültiges Token, melde dich hier einfach erneut an.",
+    privacy: "Diese Seite spricht nur mit Apple. Das Token wird hier in deinem Browser angezeigt und nirgendwohin sonst geschickt. Es gibt nur Zugriff auf die Daten von CapsPlan in deiner iCloud, nie auf andere iCloud-Daten.",
+    adp: "Accounts mit eingeschaltetem erweitertem Datenschutz können sich hier nicht anmelden (eine Einschränkung von Apple für Apps außerhalb von Apples eigenen).",
+    docs: "Dokumentation",
+    errLoad: "Apple ist gerade nicht erreichbar. Lade die Seite in einem Moment neu.",
+    errPopup: "Das Anmeldefenster wurde blockiert. Erlaube Pop-ups für diese Seite und versuche es erneut.",
+  };
+  const EN = {
+    signin: "Sign in with Apple ID",
+    copied: "Copied ✓",
+    errLoad: "Apple cannot be reached right now. Reload the page in a moment.",
+    errPopup: "The sign-in window was blocked. Allow pop-ups for this page and try again.",
+  };
+  const de = (navigator.language || "").toLowerCase().startsWith("de");
+  const T = (k) => (de ? DE[k] : EN[k]);
+  if (de) {
+    document.documentElement.lang = "de";
+    document.querySelectorAll("[data-t]").forEach((el) => {
+      const v = DE[el.dataset.t];
+      if (v) el.textContent = v;
+    });
+  }
+
+  const button = document.getElementById("signin");
+  const error = document.getElementById("error");
+  let redirectURL = null;
+
+  function showError(text) {
+    error.textContent = text;
+    error.style.display = "block";
+  }
+
+  // Ask CloudKit for the sign-in address up front: pop-ups must open right
+  // in the click, without waiting for a network request.
+  async function prepare() {
+    try {
+      const res = await fetch(URL_CURRENT);
+      const data = await res.json();
+      redirectURL = data.redirectURL;
+      if (!redirectURL) throw new Error(data.serverErrorCode || "no redirect");
+      button.textContent = T("signin");
+      button.disabled = false;
+    } catch (e) {
+      showError(T("errLoad"));
+    }
+  }
+
+  button.addEventListener("click", () => {
+    error.style.display = "none";
+    const popup = window.open(redirectURL, "capsplan-signin", "width=520,height=720");
+    if (!popup) showError(T("errPopup"));
+  });
+
+  function showToken(token) {
+    document.getElementById("token").value = token;
+    document.getElementById("result").style.display = "block";
+    document.getElementById("result").scrollIntoView({ behavior: "smooth" });
+  }
+
+  // Apple's sign-in window hands the token back to this page …
+  window.addEventListener("message", (event) => {
+    const host = (() => { try { return new URL(event.origin).hostname; } catch { return ""; } })();
+    const fromApple = host === "apple.com" || host.endsWith(".apple.com") || host.endsWith(".apple-cloudkit.com");
+    const fromSelf = event.origin === window.location.origin;
+    if (!fromApple && !fromSelf) return;
+    const token = event.data && event.data.ckWebAuthToken;
+    if (!token) return;
+    showToken(token);
+    // A new sign-in needs a fresh address.
+    button.disabled = true;
+    prepare();
+  });
+
+  // … or, when the API token has this page as its sign-in callback, Apple
+  // sends the browser back here with the token in the address.
+  const fromCallback = new URLSearchParams(window.location.search).get("ckWebAuthToken");
+  if (fromCallback) {
+    history.replaceState(null, "", window.location.pathname);
+    if (window.opener && window.opener !== window) {
+      // This is the sign-in pop-up: hand the token to the page that opened it.
+      window.opener.postMessage({ ckWebAuthToken: fromCallback }, window.location.origin);
+      window.close();
+    }
+    showToken(fromCallback);
+  }
+
+  document.getElementById("copy").addEventListener("click", async (e) => {
+    const field = document.getElementById("token");
+    try {
+      await navigator.clipboard.writeText(field.value);
+    } catch {
+      field.select();
+      document.execCommand("copy");
+    }
+    e.target.textContent = T("copied");
+  });
+
+  prepare();
+</script>
+</body>
+</html>
