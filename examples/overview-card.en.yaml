@@ -1,0 +1,24 @@
+# Overdue doses on top, below what is still planned for today.
+# Dashboard → Edit → Add card → Manual, paste this.
+type: markdown
+title: Medications today
+content: |
+  {%- set doses = state_attr('sensor.capsplan_still_to_take_today', 'doses') or [] %}
+  {%- set overdue = doses | selectattr('status', 'eq', 'open') | list %}
+  {%- set planned = doses | selectattr('status', 'eq', 'upcoming') | list %}
+  ### ⏰ Overdue
+  {%- for d in overdue %}
+  {%- set m = ((now() - as_datetime(d.time)).total_seconds() // 60) | int %}
+  - **{{ d.medication }}**{% if d.dose %} {{ '%g' | format(d.dose) }} {{ d.unit }}{% endif %} · planned {{ as_datetime(d.time).strftime('%H:%M') }} · {% if m >= 60 %}{{ m // 60 }} h {% endif %}{{ m % 60 }} min overdue
+  {%- else %}
+  ✓ Nothing overdue
+  {%- endfor %}
+
+  ---
+
+  ### 🕒 Still planned today
+  {%- for d in planned %}
+  - **{{ as_datetime(d.time).strftime('%H:%M') }}** {{ d.medication }}{% if d.dose %} {{ '%g' | format(d.dose) }} {{ d.unit }}{% endif %}
+  {%- else %}
+  ✓ Nothing else planned today
+  {%- endfor %}

@@ -93,7 +93,7 @@ async def test_entities(hass: HomeAssistant, setup) -> None:
     assert stock.attributes["total"] == 50
     assert "unit_of_measurement" not in stock.attributes
     assert hass.states.get("binary_sensor.ramipril_stock_low").state == "off"
-    assert hass.states.get("sensor.capsplan_open_doses").state == "0"
+    assert hass.states.get("sensor.capsplan_open_count").state == "0"
     assert hass.states.get("sensor.capsplan_next_dose").attributes["medication"] == "Ramipril"
 
 
@@ -111,7 +111,7 @@ async def test_dose_becomes_open_without_fetch(
     await hass.async_block_till_done()
     assert hass.states.get("binary_sensor.ramipril_dose_open").state == "on"
     assert hass.states.get("binary_sensor.capsplan_dose_open").state == "on"
-    assert hass.states.get("sensor.capsplan_open_doses").state == "1"
+    assert hass.states.get("sensor.capsplan_open_count").state == "1"
     # The minute refresh does not ask iCloud …
     assert changes.call_count == calls
     # … the regular poll does, with the stored sync token.
@@ -190,7 +190,12 @@ async def test_which_doses_are_open_and_next(
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
-    assert hass.states.get("sensor.capsplan_open").state == "Metformin 08:00, Ramipril 12:00"
+    assert hass.states.get("sensor.capsplan_open_doses").state == "08:00 Metformin 500 mg, 12:00 Ramipril 5 mg"
+    remaining = hass.states.get("sensor.capsplan_still_to_take_today")
+    assert remaining.state == (
+        "⏰ 08:00 Metformin 500 mg, ⏰ 12:00 Ramipril 5 mg, 20:00 Metformin 500 mg, 20:00 Ramipril 5 mg"
+    )
+    assert remaining.attributes["count"] == 4
     assert hass.states.get("sensor.capsplan_up_next").state == "20:00 · Metformin 500 mg, Ramipril 5 mg"
     meds = hass.states.get("sensor.capsplan_next_dose").attributes["medications"]
     assert [m["medication"] for m in meds] == ["Metformin", "Ramipril"]

@@ -42,16 +42,19 @@ Every medication becomes its own device in Home Assistant:
 
 Plus a **CapsPlan** device for everything together:
 
-| Entity | Notes |
+| Entity | Shows |
 |---|---|
-| `sensor.capsplan_up_next` | **Which** doses come next, e.g. `16:00 · Metformin 500 mg` (all medications due at that time) |
-| `sensor.capsplan_open` | **Which** doses are open, e.g. `Metformin 08:00, Ramipril 12:00` (`–` when none) |
+| `sensor.capsplan_open_doses` | **All open doses**, e.g. `05:30 Metformin 500 mg, 12:00 Ramipril 5 mg` (`–` when none) |
+| `sensor.capsplan_still_to_take_today` | **Everything still to take today**, overdue ones marked ⏰, e.g. `⏰ 12:00 Ramipril 5 mg, 20:00 Metformin 500 mg` |
+| `sensor.capsplan_up_next` | The doses at the next time, e.g. `16:00 · Metformin 500 mg, Ramipril 5 mg` |
 | `calendar.capsplan_doses` | Every planned dose as a calendar event: ✓ taken, ✗ skipped, ⏰ open |
-| `sensor.capsplan_next_dose` | Time of the next dose; attributes `medications` (all at that time), `medication`, `dose`, `unit` |
-| `sensor.capsplan_open_doses` | Number of due, unconfirmed doses (for automations); attribute `doses` |
-| `binary_sensor.capsplan_dose_open` | On while any dose is open |
+| `sensor.capsplan_open_count` | Number of open doses (for automations) |
+| `binary_sensor.capsplan_dose_open` | *Open* while any dose is open, otherwise *Done* |
+| `sensor.capsplan_next_dose` | Time of the next dose (for automations); attribute `medications` |
 | `sensor.capsplan_adherence_7_days` | Share of planned doses of the last 7 days that were taken |
 | `sensor.capsplan_last_sync` | Diagnostic: last successful sync with iCloud |
+
+The list sensors also carry the doses as attribute `doses` (medication, time, dose, unit, status) and `count`.
 
 Entity names follow your Home Assistant language (English and German included), and so do the entity ids: with German, `sensor.metformin_supply` is `sensor.metformin_reichweite`. Medications for use as needed only get the entities that make sense for them.
 
@@ -152,14 +155,69 @@ automation:
 
 More examples: [`examples/`](examples/).
 
-### Dashboard cards
+### Overview card: overdue, then the rest of today
+
+```
+### ⏰ Overdue
+- Metformin 500 mg · planned 05:30 · 8 h 10 min overdue
+- Ramipril 5 mg · planned 12:00 · 1 h 40 min overdue
+───────────────
+### 🕒 Still planned today
+- 16:00 Metformin 500 mg
+- 19:00 Ramipril 5 mg
+```
+
+Dashboard → Edit → Add card → *Manual*, paste ([`examples/overview-card.en.yaml`](examples/overview-card.en.yaml)):
+
+```yaml
+type: markdown
+title: Medications today
+content: |
+  {%- set doses = state_attr('sensor.capsplan_still_to_take_today', 'doses') or [] %}
+  {%- set overdue = doses | selectattr('status', 'eq', 'open') | list %}
+  {%- set planned = doses | selectattr('status', 'eq', 'upcoming') | list %}
+  ### ⏰ Overdue
+  {%- for d in overdue %}
+  {%- set m = ((now() - as_datetime(d.time)).total_seconds() // 60) | int %}
+  - **{{ d.medication }}**{% if d.dose %} {{ '%g' | format(d.dose) }} {{ d.unit }}{% endif %} · planned {{ as_datetime(d.time).strftime('%H:%M') }} · {% if m >= 60 %}{{ m // 60 }} h {% endif %}{{ m % 60 }} min overdue
+  {%- else %}
+  ✓ Nothing overdue
+  {%- endfor %}
+
+  ---
+
+  ### 🕒 Still planned today
+  {%- for d in planned %}
+  - **{{ as_datetime(d.time).strftime('%H:%M') }}** {{ d.medication }}{% if d.dose %} {{ '%g' | format(d.dose) }} {{ d.unit }}{% endif %}
+  {%- else %}
+  ✓ Nothing else planned today
+  {%- endfor %}
+```
+
+### More dashboard cards
+
+Everything as text, no graphs — a Markdown card:
+
+```yaml
+type: markdown
+title: Medications
+content: >-
+  **Open:** {{ states('sensor.capsplan_open_doses') }}
+
+  **Still today:** {{ states('sensor.capsplan_still_to_take_today') }}
+
+  **Up next:** {{ states('sensor.capsplan_up_next') }}
+```
+
+Or as a list of entities:
 
 ```yaml
 type: entities
 title: Medications
 entities:
+  - entity: sensor.capsplan_open_doses
+  - entity: sensor.capsplan_still_to_take_today
   - entity: sensor.capsplan_up_next
-  - entity: sensor.capsplan_open
   - entity: sensor.prednisolon_current_dose
   - entity: sensor.metformin_supply
   - entity: sensor.capsplan_adherence_7_days

@@ -36,16 +36,19 @@ Jedes Medikament wird ein eigenes Gerät in Home Assistant (Entitäts-IDs mit de
 
 Dazu ein Gerät **CapsPlan** für alles zusammen:
 
-| Entität | Hinweise |
+| Entität | Zeigt |
 |---|---|
-| `sensor.capsplan_als_nachstes` | **Welche** Einnahmen als Nächstes kommen, z. B. `16:00 · Metformin 500 mg` (alle Medikamente zu dieser Zeit) |
-| `sensor.capsplan_offen` | **Welche** Einnahmen offen sind, z. B. `Metformin 08:00, Ramipril 12:00` (`–`, wenn keine) |
+| `sensor.capsplan_offene_einnahmen` | **Alle offenen Einnahmen**, z. B. `05:30 Metformin 500 mg, 12:00 Ramipril 5 mg` (`–`, wenn keine) |
+| `sensor.capsplan_heute_noch` | **Alles, was heute noch zu nehmen ist**, Überfälliges mit ⏰, z. B. `⏰ 12:00 Ramipril 5 mg, 20:00 Metformin 500 mg` |
+| `sensor.capsplan_als_nachstes` | Die Einnahmen zur nächsten Zeit, z. B. `16:00 · Metformin 500 mg, Ramipril 5 mg` |
 | `calendar.capsplan_einnahmen` | Alle geplanten Einnahmen als Kalendertermine: ✓ genommen, ✗ übersprungen, ⏰ offen |
-| `sensor.capsplan_nachste_einnahme` | Zeitpunkt der nächsten Einnahme; Attribute `medications` (alle zu dieser Zeit), `medication`, `dose`, `unit` |
-| `sensor.capsplan_offene_einnahmen` | Anzahl fälliger, unbestätigter Einnahmen (für Automationen); Attribut `doses` |
-| `binary_sensor.capsplan_einnahme_offen` | An, solange irgendeine Einnahme offen ist |
+| `sensor.capsplan_anzahl_offen` | Anzahl offener Einnahmen (für Automationen) |
+| `binary_sensor.capsplan_einnahme_offen` | *Offen*, solange irgendeine Einnahme offen ist, sonst *Erledigt* |
+| `sensor.capsplan_nachste_einnahme` | Zeitpunkt der nächsten Einnahme (für Automationen); Attribut `medications` |
 | `sensor.capsplan_einnahmetreue_7_tage` | Anteil der geplanten Einnahmen der letzten 7 Tage, die genommen wurden |
 | `sensor.capsplan_letzte_synchronisation` | Diagnose: letzter erfolgreicher Abgleich mit iCloud |
+
+Die Listen-Sensoren enthalten die Einnahmen zusätzlich als Attribut `doses` (Medikament, Zeit, Dosis, Einheit, Status) und `count`.
 
 Mit englischer Home-Assistant-Sprache heißen Namen und IDs englisch (z. B. `sensor.metformin_supply`). Bedarfsmedikamente bekommen nur die Entitäten, die für sie sinnvoll sind.
 
@@ -144,14 +147,69 @@ automation:
         data: { item: "Rezept Metformin" }
 ```
 
-### Dashboard
+### Übersicht: erst Überfälliges, dann der Rest von heute
+
+```
+### ⏰ Überfällig
+- Metformin 500 mg · geplant 05:30 · seit 8 Std. 10 Min.
+- Ramipril 5 mg · geplant 12:00 · seit 1 Std. 40 Min.
+───────────────
+### 🕒 Heute noch geplant
+- 16:00 Metformin 500 mg
+- 19:00 Ramipril 5 mg
+```
+
+Dashboard → Bearbeiten → Karte hinzufügen → *Manuell*, einfügen ([`examples/overview-card.de.yaml`](examples/overview-card.de.yaml)):
+
+```yaml
+type: markdown
+title: Medikamente heute
+content: |
+  {%- set doses = state_attr('sensor.capsplan_heute_noch', 'doses') or [] %}
+  {%- set overdue = doses | selectattr('status', 'eq', 'open') | list %}
+  {%- set planned = doses | selectattr('status', 'eq', 'upcoming') | list %}
+  ### ⏰ Überfällig
+  {%- for d in overdue %}
+  {%- set m = ((now() - as_datetime(d.time)).total_seconds() // 60) | int %}
+  - **{{ d.medication }}**{% if d.dose %} {{ '%g' | format(d.dose) }} {{ d.unit }}{% endif %} · geplant {{ as_datetime(d.time).strftime('%H:%M') }} · seit {% if m >= 60 %}{{ m // 60 }} Std. {% endif %}{{ m % 60 }} Min.
+  {%- else %}
+  ✓ Nichts überfällig
+  {%- endfor %}
+
+  ---
+
+  ### 🕒 Heute noch geplant
+  {%- for d in planned %}
+  - **{{ as_datetime(d.time).strftime('%H:%M') }}** {{ d.medication }}{% if d.dose %} {{ '%g' | format(d.dose) }} {{ d.unit }}{% endif %}
+  {%- else %}
+  ✓ Für heute ist nichts mehr geplant
+  {%- endfor %}
+```
+
+### Weitere Dashboard-Karten
+
+Alles als Text, ohne Graphen – eine Markdown-Karte:
+
+```yaml
+type: markdown
+title: Medikamente
+content: >-
+  **Offen:** {{ states('sensor.capsplan_offene_einnahmen') }}
+
+  **Heute noch:** {{ states('sensor.capsplan_heute_noch') }}
+
+  **Als Nächstes:** {{ states('sensor.capsplan_als_nachstes') }}
+```
+
+Oder als Liste von Entitäten:
 
 ```yaml
 type: entities
 title: Medikamente
 entities:
+  - entity: sensor.capsplan_offene_einnahmen
+  - entity: sensor.capsplan_heute_noch
   - entity: sensor.capsplan_als_nachstes
-  - entity: sensor.capsplan_offen
   - entity: sensor.capsplan_einnahmetreue_7_tage
 ```
 

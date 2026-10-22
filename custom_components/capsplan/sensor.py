@@ -153,12 +153,41 @@ def _next_text(data: CapsPlanData) -> str:
     return _clip(f"{_when(data, data.next_group[0][1].time)} · {labels}")
 
 
-def _open_text(data: CapsPlanData) -> str:
-    if not data.open_list:
+def _dose_items(doses: list[tuple[logic.MedicationState, logic.PlannedDose]], mark_open: bool = False) -> str:
+    """"⏰ 12:00 Mestinon 60 mg, 16:00 Mestinon 60 mg" ("–" when empty)."""
+    if not doses:
         return "–"
     return _clip(
-        ", ".join(f"{s.medication.name} {d.time.strftime('%H:%M')}" for s, d in data.open_list)
+        ", ".join(
+            ("⏰ " if mark_open and d.status == "open" else "")
+            + f"{d.time.strftime('%H:%M')} {logic.dose_label(s.medication, d.dose)}"
+            for s, d in doses
+        )
     )
+
+
+def _open_text(data: CapsPlanData) -> str:
+    return _dose_items(data.open_list)
+
+
+def _remaining_text(data: CapsPlanData) -> str:
+    return _dose_items(data.remaining_today, mark_open=True)
+
+
+def _list_attrs(doses: list[tuple[logic.MedicationState, logic.PlannedDose]]) -> dict[str, Any]:
+    return {
+        "count": len(doses),
+        "doses": [
+            {
+                "medication": s.medication.name,
+                "time": d.time.isoformat(),
+                "dose": d.dose,
+                "unit": s.medication.dose_unit,
+                "status": d.status,
+            }
+            for s, d in doses
+        ],
+    }
 
 
 def _clip(text: str) -> str:
@@ -192,6 +221,13 @@ ACCOUNT_SENSORS: tuple[AccountSensorDescription, ...] = (
         key="open_doses_text",
         translation_key="open_doses_text",
         value=_open_text,
+        attrs=lambda d: _list_attrs(d.open_list),
+    ),
+    AccountSensorDescription(
+        key="remaining_today",
+        translation_key="remaining_today",
+        value=_remaining_text,
+        attrs=lambda d: _list_attrs(d.remaining_today),
     ),
     AccountSensorDescription(
         key="open_doses",

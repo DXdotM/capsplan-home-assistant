@@ -53,7 +53,7 @@
         "name": "Nächste Einnahme"
       },
       "open_doses": {
-        "name": "Offene Einnahmen"
+        "name": "Anzahl offen"
       },
       "adherence_7d": {
         "name": "Einnahmetreue (7 Tage)"
@@ -72,7 +72,10 @@
         "name": "Als Nächstes"
       },
       "open_doses_text": {
-        "name": "Offen"
+        "name": "Offene Einnahmen"
+      },
+      "remaining_today": {
+        "name": "Heute noch"
       }
     },
     "binary_sensor": {

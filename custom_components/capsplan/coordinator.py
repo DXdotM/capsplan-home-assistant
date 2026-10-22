@@ -33,6 +33,8 @@ class CapsPlanData:
     # All doses due at the next dose time (several medications at 08:00).
     next_group: list[tuple[logic.MedicationState, logic.PlannedDose]]
     open_list: list[tuple[logic.MedicationState, logic.PlannedDose]]
+    # Today's doses not taken or skipped yet: open (due) and upcoming.
+    remaining_today: list[tuple[logic.MedicationState, logic.PlannedDose]]
     adherence_7d: float | None
     last_sync: datetime | None
 
@@ -95,6 +97,10 @@ class CapsPlanCoordinator(DataUpdateCoordinator[CapsPlanData]):
             key=lambda x: (x[1].time, x[0].medication.name.lower()),
         )
         next_group = [x for x in upcoming if x[1].time == upcoming[0][1].time] if upcoming else []
+        remaining_today = sorted(
+            ((s, d) for s in states.values() for d in s.today if d.status in ("open", "upcoming")),
+            key=lambda x: (x[1].time, x[0].medication.name.lower()),
+        )
         open_list = sorted(
             ((s, d) for s in states.values() for d in s.today if d.status == "open"),
             key=lambda x: (x[1].time, x[0].medication.name.lower()),
@@ -107,6 +113,7 @@ class CapsPlanCoordinator(DataUpdateCoordinator[CapsPlanData]):
             next_dose=next_group[0] if next_group else None,
             next_group=next_group,
             open_list=open_list,
+            remaining_today=remaining_today,
             adherence_7d=logic.adherence(active, now),
             last_sync=self._last_sync,
         )

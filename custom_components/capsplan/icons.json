@@ -64,6 +64,9 @@
       },
       "last_sync": {
         "default": "mdi:cloud-sync-outline"
+      },
+      "remaining_today": {
+        "default": "mdi:format-list-checks"
       }
     }
   }
