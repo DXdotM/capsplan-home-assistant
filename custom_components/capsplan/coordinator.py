@@ -67,6 +67,9 @@ class CapsPlanCoordinator(DataUpdateCoordinator[CapsPlanData]):
         # Medications built from the records; rebuilt only when they change.
         self._meds: dict[str, logic.Medication] = {}
         self._built = False
+        # Bumped by every rebuild, so a minute refresh that was computed from
+        # older medications doesn't overwrite newer data.
+        self._generation = 0
 
     async def _async_update_data(self) -> CapsPlanData:
         if not self._loaded:
@@ -112,6 +115,7 @@ class CapsPlanCoordinator(DataUpdateCoordinator[CapsPlanData]):
                 med.name = f"{label} {i}"
         self._meds = meds
         self._built = True
+        self._generation += 1
 
     @staticmethod
     def _compute(meds: dict[str, logic.Medication], last_sync: datetime | None) -> CapsPlanData:
@@ -154,7 +158,9 @@ class CapsPlanCoordinator(DataUpdateCoordinator[CapsPlanData]):
         """
         if self.data is None or not self.last_update_success:
             return
-        self.data = await self.hass.async_add_executor_job(
-            self._compute, self._meds, self._last_sync
-        )
+        generation = self._generation
+        data = await self.hass.async_add_executor_job(self._compute, self._meds, self._last_sync)
+        if generation != self._generation:
+            return  # new records arrived meanwhile; their update is newer
+        self.data = data
         self.async_update_listeners()
