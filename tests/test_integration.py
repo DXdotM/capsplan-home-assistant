@@ -105,12 +105,14 @@ async def test_dose_becomes_open_without_fetch(
     entry, changes = setup
     freezer.move_to(datetime(2026, 10, 19, 19, 58, tzinfo=TZ))
     async_fire_time_changed(hass)
-    await hass.async_block_till_done()
+    # Scheduled coordinator refreshes run as background tasks.
+    await hass.async_block_till_done(wait_background_tasks=True)
     assert hass.states.get("binary_sensor.ramipril_dose_open").state == "off"
     calls = changes.call_count
     freezer.tick(timedelta(minutes=3))  # 20:01, the evening dose is due
     async_fire_time_changed(hass)
-    await hass.async_block_till_done()
+    # Scheduled coordinator refreshes run as background tasks.
+    await hass.async_block_till_done(wait_background_tasks=True)
     assert hass.states.get("binary_sensor.ramipril_dose_open").state == "on"
     assert hass.states.get("binary_sensor.capsplan_dose_open").state == "on"
     assert hass.states.get("sensor.capsplan_open_count").state == "1"
@@ -119,7 +121,8 @@ async def test_dose_becomes_open_without_fetch(
     # … the regular poll does, with the stored sync token.
     freezer.tick(timedelta(minutes=5))
     async_fire_time_changed(hass)
-    await hass.async_block_till_done()
+    # Scheduled coordinator refreshes run as background tasks.
+    await hass.async_block_till_done(wait_background_tasks=True)
     assert changes.call_count > calls
     assert changes.call_args.args[0] == "sync-1"
 
@@ -131,7 +134,8 @@ async def test_sign_in_expired_starts_reauth(
     changes.side_effect = CapsPlanAuthError("expired")
     freezer.tick(timedelta(minutes=6))
     async_fire_time_changed(hass)
-    await hass.async_block_till_done()
+    # Scheduled coordinator refreshes run as background tasks.
+    await hass.async_block_till_done(wait_background_tasks=True)
     flows = hass.config_entries.flow.async_progress()
     assert any(f["context"]["source"] == "reauth" for f in flows)
 
@@ -163,7 +167,8 @@ async def test_new_medication_adds_device(
     )
     freezer.tick(timedelta(minutes=6))
     async_fire_time_changed(hass)
-    await hass.async_block_till_done()
+    # Scheduled coordinator refreshes run as background tasks.
+    await hass.async_block_till_done(wait_background_tasks=True)
     assert hass.states.get("sensor.metformin_next_dose") is not None
     assert hass.states.get("sensor.ramipril_next_dose") is not None
 
@@ -276,14 +281,16 @@ async def test_removed_and_paused_medications_disappear(
     )
     freezer.tick(timedelta(minutes=6))
     async_fire_time_changed(hass)
-    await hass.async_block_till_done()
+    # Scheduled coordinator refreshes run as background tasks.
+    await hass.async_block_till_done(wait_background_tasks=True)
     assert not med_device()
     assert hass.states.get("sensor.ramipril_next_dose") is None
     # … and back: the device returns.
     changes.return_value = ([record(f"medication-{MED}", "medication", medication())], "sync-3")
     freezer.tick(timedelta(minutes=6))
     async_fire_time_changed(hass)
-    await hass.async_block_till_done()
+    # Scheduled coordinator refreshes run as background tasks.
+    await hass.async_block_till_done(wait_background_tasks=True)
     assert med_device()
     assert hass.states.get("sensor.ramipril_next_dose") is not None
 
