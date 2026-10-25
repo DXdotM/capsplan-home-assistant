@@ -64,6 +64,9 @@ class CapsPlanCoordinator(DataUpdateCoordinator[CapsPlanData]):
         self._sync = logic.SyncStore()
         self._loaded = False
         self._last_sync: datetime | None = None
+        # Medications built from the records; rebuilt only when they change.
+        self._meds: dict[str, logic.Medication] = {}
+        self._built = False
 
     async def _async_update_data(self) -> CapsPlanData:
         if not self._loaded:
@@ -86,23 +89,36 @@ class CapsPlanCoordinator(DataUpdateCoordinator[CapsPlanData]):
         except CapsPlanError as err:
             raise UpdateFailed(str(err)) from err
 
-        if self._sync.apply(records) or token != self._sync.sync_token:
+        changed = self._sync.apply(records)
+        if changed or token != self._sync.sync_token:
             self._sync.sync_token = token
             self._store.async_delay_save(self._sync.to_dict, 10)
+        if changed or not self._built:
+            self._rebuild()
         self._last_sync = dt_util.utcnow()
-        return self.compute()
+        return await self.hass.async_add_executor_job(self._compute, self._meds, self._last_sync)
 
-    def compute(self) -> CapsPlanData:
-        """Recomputes all states from the synced data for the current time."""
+    def _rebuild(self) -> None:
+        """Builds the medications from the synced records (event loop; only
+        when records changed). The minute refresh only reads the result."""
         tz = dt_util.get_default_time_zone()
-        now = dt_util.now()
         # Paused or finished medications (switched off in the app) are left out.
         meds = {sid: m for sid, m in logic.build(self._sync, tz).items() if m.active}
         if self.config_entry.options.get(CONF_HIDE_NAMES):
             label = MEDICATION_WORD.get(self.hass.config.language.split("-")[0], "Medication")
-            ordered = sorted(meds.values(), key=lambda m: (m.created_at or now, m.sid))
+            far = dt_util.now()
+            ordered = sorted(meds.values(), key=lambda m: (m.created_at or far, m.sid))
             for i, med in enumerate(ordered, 1):
                 med.name = f"{label} {i}"
+        self._meds = meds
+        self._built = True
+
+    @staticmethod
+    def _compute(meds: dict[str, logic.Medication], last_sync: datetime | None) -> CapsPlanData:
+        """All states for the current time. Runs in the executor: it only
+        reads the already built medications, which are never changed after
+        _rebuild (a rebuild replaces the whole dict)."""
+        now = dt_util.now()
         states = {sid: logic.medication_state(m, now) for sid, m in meds.items()}
 
         def by_time(x: tuple[logic.MedicationState, logic.PlannedDose]):
@@ -127,15 +143,18 @@ class CapsPlanCoordinator(DataUpdateCoordinator[CapsPlanData]):
             open_list=open_list,
             remaining_today=remaining_today,
             adherence_7d=logic.adherence(scheduled, now),
-            last_sync=self._last_sync,
+            last_sync=last_sync,
         )
 
-    def refresh_state(self) -> None:
+    async def async_refresh_state(self) -> None:
         """Pushes freshly computed states without contacting iCloud.
 
         Not async_set_updated_data: that would also postpone the next fetch
         from iCloud every time, so it would never happen.
         """
-        if self.data is not None and self.last_update_success:
-            self.data = self.compute()
-            self.async_update_listeners()
+        if self.data is None or not self.last_update_success:
+            return
+        self.data = await self.hass.async_add_executor_job(
+            self._compute, self._meds, self._last_sync
+        )
+        self.async_update_listeners()

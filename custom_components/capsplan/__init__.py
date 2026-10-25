@@ -37,7 +37,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: CapsPlanConfigEntry) -> 
 
     @callback
     def _recompute(_now) -> None:
-        coordinator.refresh_state()
+        entry.async_create_task(hass, coordinator.async_refresh_state(), "capsplan_refresh_state")
 
     entry.async_on_unload(async_track_time_interval(hass, _recompute, RECOMPUTE_INTERVAL))
 

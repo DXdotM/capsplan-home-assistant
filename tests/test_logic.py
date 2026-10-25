@@ -282,3 +282,33 @@ def test_yesterday_before_creation_is_not_open():
                               medication(scheduledTimes=["21:00"], createdAt=created)))
     med = logic.build(store, TZ)[MED]
     assert logic.medication_state(med, datetime(2026, 10, 19, 7, tzinfo=TZ)).overdue == []
+
+
+def test_three_years_of_history_stay_fast():
+    # The minute refresh plans up to a year ahead for the supply; with the
+    # intakes indexed once, that must not scan the history per day.
+    import time
+
+    recs = []
+    now = datetime(2026, 10, 24, 12, tzinfo=TZ)
+    for m in range(5):
+        sid = f"m{m}"
+        recs.append(record(f"medication-{sid}", "medication", medication(scheduledTimes=["08:00", "20:00"])))
+        recs[-1]["recordName"] = f"medication-{sid}"
+        recs.append(record(f"strength-{sid}", "strength", {
+            "_med": sid, "strength": 5.0, "quarters": 4 * 400, "isArchived": False}))
+        for d in range(3 * 365):
+            for h in (8, 20):
+                t = now.replace(hour=h, minute=0) - timedelta(days=d + 1)
+                payload = intake(t)
+                payload["_med"] = sid
+                recs.append(record(f"intake-{sid}-{d}-{h}", "intake", payload))
+    meds = logic.build(store_with(*recs), TZ)
+    assert len(meds) == 5
+    start = time.perf_counter()
+    for med in meds.values():
+        state = logic.medication_state(med, now)
+        assert state.supply_days == 199
+    logic.adherence(list(meds.values()), now)
+    # Was ~0.5 s before indexing (several seconds on a Raspberry Pi).
+    assert time.perf_counter() - start < 0.2

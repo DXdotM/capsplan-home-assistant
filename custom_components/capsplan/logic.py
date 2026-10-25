@@ -169,6 +169,10 @@ class Medication:
     intakes: list[Intake] = field(default_factory=list)
     blister_remaining: float | None = None
     blister_low: bool = False
+    # Built once in build(): intakes by planned minute, the latest confirmation.
+    intake_index: dict[datetime, Intake] = field(default_factory=dict)
+    last_confirmed: datetime | None = None
+    indexed: bool = False
 
 
 def build(store: SyncStore, tz: tzinfo) -> dict[str, Medication]:
@@ -251,7 +255,21 @@ def build(store: SyncStore, tz: tzinfo) -> dict[str, Medication]:
             )
     for med in meds.values():
         med.slots.sort(key=lambda s: s.time)
+        index_intakes(med)
     return meds
+
+
+def index_intakes(med: Medication) -> None:
+    """Indexes the intakes once, so looking up a planned dose doesn't scan
+    the whole history (planned_doses runs for up to a year of days)."""
+    med.intake_index = {
+        i.scheduled.replace(second=0, microsecond=0): i
+        for i in med.intakes
+        if i.scheduled is not None
+    }
+    confirmed = [i.confirmed_at for i in med.intakes if i.status == STATUS_CONFIRMED and i.confirmed_at]
+    med.last_confirmed = max(confirmed) if confirmed else None
+    med.indexed = True
 
 
 # ── Schedule (mirrors the app) ─────────────────────────────────────────────
@@ -380,10 +398,9 @@ def planned_doses(med: Medication, day: date, now: datetime) -> list[PlannedDose
             _at(day, s.time, tz) for s in _effective_slots(med) if _slot_applies(day, s)
         )
 
-    by_time: dict[datetime, Intake] = {}
-    for intake in med.intakes:
-        if intake.scheduled is not None:
-            by_time[intake.scheduled.replace(second=0, microsecond=0)] = intake
+    if not med.indexed:
+        index_intakes(med)  # a Medication built by hand (tests)
+    by_time = med.intake_index
 
     result: list[PlannedDose] = []
     for t in times:
@@ -497,8 +514,9 @@ def medication_state(med: Medication, now: datetime, horizon_days: int = 21) -> 
     else:
         current = med.dose_amount
 
-    taken = [i.confirmed_at for i in med.intakes if i.status == STATUS_CONFIRMED and i.confirmed_at]
-    last_taken = max(taken) if taken else None
+    if not med.indexed:
+        index_intakes(med)
+    last_taken = med.last_confirmed
 
     amount: float | None = None
     units: float | None = None
